@@ -1,2 +1,9 @@
 *application_generated_data_files/
 *reports/
+old_stuff/
+
+# exclude data files
+*.txt
+!LICENSE.txt
+*.csv
+*.npy
