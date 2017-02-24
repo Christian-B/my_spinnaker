@@ -22,14 +22,12 @@ def heat_plot(v):
     neurons = v[:, 0].astype(int)
     times = v[:, 1].astype(int)
     voltage = v[:, 2]
-    z_array = np.nan * np.empty((max(neurons)+1,max(times)+1))
-    z_array[neurons, times] = voltage
-    # plt.pcolormesh(neurons, times, z_array)
-    # plt.colorbar()  # need a colorbar to show the intensity scale
+    voltage_array = np.nan * np.empty((max(neurons)+1,max(times)+1))
+    voltage_array[neurons, times] = voltage
     plt.xlabel("Time (ms)")
     plt.ylabel("Neuron Id")
     plt.title("Voltage");
-    plt.imshow(z_array, cmap='hot', interpolation='bilinear', aspect='auto')
+    plt.imshow(voltage_array, cmap='hot', interpolation='bilinear', aspect='auto')
     plt.colorbar()
     plt.show()
 
@@ -46,7 +44,7 @@ def plot_spikes(spikes):
 
 if __name__ == "__main__":
     v = np.load("v.npy")
-    # line_plot(v)
+    line_plot(v)
     heat_plot(v)
     ## spikes = np.load("spikes.npy")
     # print spikes
