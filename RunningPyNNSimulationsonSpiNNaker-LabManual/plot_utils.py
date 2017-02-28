@@ -31,25 +31,54 @@ def heat_plot(v):
     plt.colorbar()
     plt.show()
 
-def plot_spikes(spikes):
+def plot_spikes(spikes, spikes2=None):
+    found = False
+    minTime = None
+    maxTime = None
+    minSpike = None
+    maxSpike = None
     spike_time = [i[1] for i in spikes]
     spike_id = [i[0] for i in spikes]
     if len(spike_time) == 0:
         print "No spikes detected"
-        return
-    plt.plot(spike_time, spike_id, ".")
-    plt.xlabel("Time (ms)")
-    plt.ylabel("Neuron ID")
-    plt.title("spikes");
-    plt.axis([min(spike_time), max(spike_time), min(spike_id), max(spike_id)])
-    plt.show()
+    else:
+        found = True
+        minTime = min(spike_time)
+        maxTime = max(spike_time)
+        minSpike = min(spike_id)
+        maxSpike = max(spike_id)
+        plt.plot(spike_time, spike_id, "b.",)
+    if spikes2 != None:
+        spike_time = [i[1] for i in spikes2]
+        spike_id = [i[0] for i in spikes2]
+        if len(spike_time) == 0:
+            print "No spikes detected in second spike data"
+        else:
+            found = True
+            minTime = min(minTime, min(spike_time))
+            maxTime = max(maxTime, max(spike_time))
+            minSpike = min(minSpike, min(spike_id))
+            maxSpike = max(maxSpike, max(spike_id))
+            plt.plot(spike_time, spike_id, "r.", )
+    if found:
+        plt.xlabel("Time (ms)")
+        plt.ylabel("Neuron ID")
+        plt.title("spikes");
+        timeDiff = (maxTime - minTime) * 0.05
+        minTime = minTime - timeDiff
+        maxTime = maxTime + timeDiff
+        spikeDiff = (maxSpike - minSpike) * 0.05
+        minSpike = minSpike - spikeDiff
+        maxSpike = maxSpike + spikeDiff
+        plt.axis([minTime, maxTime, minSpike, maxSpike])
+        plt.show()
 
 
 if __name__ == "__main__":
     v = np.load("v.npy")
-    line_plot(v)
+    #line_plot(v)
     # heat_plot(v)
-    ## spikes = np.load("spikes.npy")
-    # print spikes
-    # plot_spikes(spikes);
+    spikes1 = np.load("pre_spikes.npy")
+    spikes2 = np.load("post_spikes.npy")
+    plot_spikes(spikes1, spikes2);
 
