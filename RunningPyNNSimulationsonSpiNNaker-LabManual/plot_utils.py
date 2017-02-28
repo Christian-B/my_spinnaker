@@ -34,6 +34,9 @@ def heat_plot(v):
 def plot_spikes(spikes):
     spike_time = [i[1] for i in spikes]
     spike_id = [i[0] for i in spikes]
+    if len(spike_time) == 0:
+        print "No spikes detected"
+        return
     plt.plot(spike_time, spike_id, ".")
     plt.xlabel("Time (ms)")
     plt.ylabel("Neuron ID")
@@ -45,55 +48,8 @@ def plot_spikes(spikes):
 if __name__ == "__main__":
     v = np.load("v.npy")
     line_plot(v)
-    heat_plot(v)
+    # heat_plot(v)
     ## spikes = np.load("spikes.npy")
     # print spikes
     # plot_spikes(spikes);
 
-# plot_voltage(v)
-
-# a = np.random.random((16, 16))
-# print a
-# plt.imshow(a, cmap='hot', interpolation='nearest')
-# plt.show()
-
-"""
-#here's our data to plot, all normal Python lists
-x = [1, 2, 3, 4, 5]
-y = [0.1, 0.2, 0.3, 0.4, 0.5]
-
-intensity = [
-    [5, 10, 15, 20, 25],
-    [30, 35, 40, 45, 50],
-    [55, 60, 65, 70, 75],
-    [80, 85, 90, 95, 100],
-    [105, 110, 115, 120, 125]
-]
-
-print "x"
-print x
-print "y"
-print y
-print "intensity"
-print intensity
-
-#setup the 2D grid with Numpy
-x, y = np.meshgrid(x, y)
-
-#convert intensity (list of lists) to a numpy array for plotting
-intensity = np.array(intensity)
-
-print "x"
-print x
-print "y"
-print y
-print "intensity"
-print intensity
-
-
-#now just plug the data into pcolormesh, it's that easy!
-plt.pcolormesh(x, y, intensity)
-# plt.pcolormesh(v)
-plt.colorbar() #need a colorbar to show the intensity scale
-plt.show() #boom
-"""
