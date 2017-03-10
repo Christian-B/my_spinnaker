@@ -1,0 +1,26 @@
+renaming:
+AbstractHasAssociatedBinary -> AssociatedBinaryInterface
+AbstractSpikeRecordable -> SpikeRecordableInterface
+AbstractVRecordable -> VRecordableInterface
+AbstractGSynRecordable -> GSynRecordableInterface
+AbstractProvidesOutgoingPartitionConstraints -> OutgoingPartitionConstraintsInterface
+AbstractProvidesIncomingPartitionConstraints -> IncomingPartitionConstraintsInterface
+AbstractPopulationInitializable -> InitializableInterface
+AbstractPopulationSettable -> ValueInterface
+AbstractChangableAfterRun -> ChangableAfterRunInterface
+AbstractHasGlobalMaxAtoms -> MaxAtomsPerCoreInterface
+AbstractInput -> InputInterface
+
+AbstractBinaryUsesSimulationRun -> BinaryUsesSimulationRunMarker
+AbstractStartsSynchronized -> StartsSynchronizedMarker
+
+
+
+special:
+AbstractHasConstraints replaced with ConstraintObject
+AbstractHasLabel deleted
+
+AbstractGeneratesDataSpecification -> DataSpecificationType
+	optional remove method as signature changes UGH!
+
+
