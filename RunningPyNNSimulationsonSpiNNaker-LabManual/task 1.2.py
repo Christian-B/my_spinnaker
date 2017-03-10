@@ -22,7 +22,7 @@ def plot_spikes(spikes):
     pylab.axis([0, 10, -1, 1])
     pylab.show()
 
-p.setup(timestep=1.0)
+p.setup(timestep=1)
 pop_1 = p.Population(1, p.IF_curr_exp, {}, label="pop_1")
 input=p.Population(1,p.SpikeSourceArray, {'spike_times': [[0]]}, label="input")
 input_proj = p.Projection(input, pop_1, p.OneToOneConnector(weights=5.0, delays=1), target="excitatory")
@@ -33,5 +33,5 @@ v = pop_1.get_v()
 print v
 spikes = pop_1.getSpikes()
 print spikes
-plot_voltage(v)
-plot_spikes(spikes)
+#plot_voltage(v)
+#plot_spikes(spikes)
