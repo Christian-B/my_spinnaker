@@ -1,0 +1,15 @@
+Interfaces / Interfaces
+/brenninc/spinnaker/SpiNNStorageHandlers/spinn_storage_handlers/ all
+
+/brenninc/spinnaker/SpiNNMan/spinnman/connections/abstract_classes/ all
+/brenninc/spinnaker/SpiNNMan/spinnman/messages/eieio/abstract_messages/abstract_eieio_message.py
+/brenninc/spinnaker/SpiNNMan/spinnman/messages/eieio/data_messages/abstract_eieio_data_element.py
+/brenninc/spinnaker/SpiNNMan/spinnman/processes/abstract_multi_connection_process_connection_selector.py
+
+Abstract no Diamond
+/brenninc/spinnaker/SpiNNMachine/spinn_machine/link_data_objects/abstract_link_data.py
+/brenninc/spinnaker/SpiNNMan/spinnman/messages/scp/abstract_messages/abstract_scp_response.py
+/brenninc/spinnaker/SpiNNMan/spinnman/messages/scp/abstract_messages/abstract_scp_request.py
+
+WEIRD
+/brenninc/spinnaker/SpiNNMan/spinnman/processes/abstract_multi_connection_process_connection_selector.py
