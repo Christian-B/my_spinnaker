@@ -35,3 +35,4 @@ spikes = pop_1.getSpikes()
 print spikes
 #plot_voltage(v)
 #plot_spikes(spikes)
+print "DONE"
