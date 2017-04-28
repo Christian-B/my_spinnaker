@@ -1,0 +1,4 @@
+digraph G {
+	Left -> Right
+	Right -> Left
+	}
