@@ -6,7 +6,7 @@ default = dict()
 default["start"] = start
 default["end"] = end
 
-full =  RangeDictionary (start, end, default)
+full = RangeDictionary(start, end, default)
 
 print full
 print "--"
@@ -23,12 +23,12 @@ print ("start", view["start"])
 
 full.setitem_by_zone(35, 70, "end", 70)
 for index_range in full.get_ranges():
-    print (index_range , "  ",  full.view_by_range(index_range))
+    print (index_range, "  ",  full.view_by_range(index_range))
 
-print full.view_by_index(45).has_key("start")
+print "start" in full.view_by_index(45)
 print full.view_by_index(45)["start"]
 
-print full.view_by_index(45).has_key("foo")
+print "foo" in full.view_by_index(45)
 try:
     print full.get_value(45, "foo")
 except KeyError as key_error:
@@ -36,4 +36,4 @@ except KeyError as key_error:
 
 view.setitem_by_index("middle", 45)
 for index_range in full.all_get_ranges():
-    print (index_range , "  ",  str(full.get_by_range(index_range)))
+    print (index_range, "  ",  str(full.get_by_range(index_range)))

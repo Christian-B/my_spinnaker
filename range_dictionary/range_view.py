@@ -1,5 +1,6 @@
 from abstract_view import AbstractView
 
+
 class RangeView(AbstractView):
 
     __range_dictionary = None
@@ -16,10 +17,12 @@ class RangeView(AbstractView):
         return self.__range_dictionary.len_by_range(self.__range_index)
 
     def __getitem__(self, key):
-        return self.__range_dictionary.getitem_by_range(self.__range_index, key)
+        return self.__range_dictionary.getitem_by_range(self.__range_index,
+                                                        key)
 
     def __setitem__(self, key, value):
-        return self.__range_dictionary.setitem_by_range(self.__range_index, key, value)
+        return self.__range_dictionary.setitem_by_range(self.__range_index,
+                                                        key, value)
 
     def __str__(self):
         return str(self.__range_index) + self.data_string()

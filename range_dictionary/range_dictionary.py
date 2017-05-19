@@ -8,6 +8,7 @@ from range_view import RangeView
 from index_view import IndexView
 from zone_view import ZoneView
 
+
 class RangeDictionary(AbstractView):
     __data = dict()
     __keys_changed = False
@@ -70,27 +71,27 @@ class RangeDictionary(AbstractView):
 
     # range methods
     def iter_by_range(self, range_index):
-        if self.__data.has_key(range_index):
+        if range_index in self.__data:
             return iter(self.__data[range_index])
         raise RangeDividedException(range_index)
 
     def len_by_range(self, range_index):
-        if self.__data.has_key(range_index):
+        if range_index in self.__data:
             return len(self.__data[range_index])
         raise RangeDividedException(range_index)
 
     def getitem_by_range(self, range_index, key):
-        if self.__data.has_key(range_index):
+        if range_index in self.__data:
             return self.__data[range_index][key]
         raise RangeDividedException(range_index)
 
     def setitem_by_range(self, range_index, key, value):
-        if self.__data.has_key(range_index):
+        if range_index in self.__data:
             self.__data[range_index][key] = value
         raise RangeDividedException(range_index)
 
     def view_by_range(self, range_index):
-        if self.__data.has_key(range_index):
+        if range_index in self.__data:
             return RangeView(self, range_index)
         raise RangeDividedException(range_index)
 
@@ -116,7 +117,8 @@ class RangeDictionary(AbstractView):
     def setitem_by_zone(self, start, end, key, value):
         index_ranges = self.get_ranges_by_zone(start, end)
         # check if some of first range is kept rest a new range
-        if start > index_ranges[0][0] and self._new_value(index_ranges[0], key, value):
+        if start > index_ranges[0][0] and \
+                self._new_value(index_ranges[0], key, value):
             previous = self.__data[index_ranges[0]]
             previous_range = (index_ranges[0][0], start - 1)
             self.__data[previous_range] = previous
@@ -125,7 +127,8 @@ class RangeDictionary(AbstractView):
             index_ranges[0] = (start, index_ranges[0][1])
             self.__data[index_ranges[0]] = copy.copy(previous)
         # check if some of last range is kept rest a new range
-        if end < index_ranges[-1][1] and self._new_value(index_ranges[-1], key, value):
+        if end < index_ranges[-1][1] and \
+                self._new_value(index_ranges[-1], key, value):
             previous = self.__data[index_ranges[-1]]
             previous_range = (end + 1, index_ranges[-1][1])
             self.__data[previous_range] = previous
@@ -153,20 +156,24 @@ class RangeDictionary(AbstractView):
         if start > end:
             raise Exception("Start must be less than or equal to end")
         if start < self.__start:
-            raise Exception("Start too low {} is less than {}".format(start, self.__start))
+            raise Exception("Start too low {} is less than {}"
+                            "".format(start, self.__start))
         if end > self.__end:
-            raise Exception("Index too high {} is greater than {}".format(end, self.__end))
+            raise Exception("Index too high {} is greater than {}"
+                            "".format(end, self.__end))
 
     def _check_index(self, index):
         if index < self.__start:
-            raise Exception ("Index too low {} is less than {}".format(index, self.__start))
+            raise Exception("Index too low {} is less than {}"
+                            "".format(index, self.__start))
         if index > self.__end:
-            raise Exception ("Index too high {} is greater than {}".format(index, self.__end))
+            raise Exception("Index too high {} is greater than {}"
+                            "".format(index, self.__end))
 
     def _new_value(self, range_index, key, value):
-        if self.__data.has_key(range_index):
-            if self.__data[range_index].has_key(key):
+        if range_index in self.__data:
+            if key in self.__data[range_index]:
                 return not value == self.__data[range_index][key]
             else:
                 return True
-        raise Exception ("Ranges changed")
+        raise Exception("Ranges changed")

@@ -9,7 +9,7 @@ class PylabMock():
                facecolor=None,  # defaults to rc figure.facecolor
                edgecolor=None,  # defaults to rc figure.edgecolor
                frameon=True, FigureClass=None, **kwargs):
-     pass
+        pass
 
     def plot(self, *args, **kwargs):
         pass

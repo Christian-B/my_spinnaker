@@ -1,5 +1,6 @@
 import collections
 
+
 class IndexView(collections.Mapping):
 
     __index = None
@@ -8,9 +9,6 @@ class IndexView(collections.Mapping):
     def __init__(self, range_dictiorary, index):
         self.__index = index
         self.__range_dictionary = range_dictiorary
-
-    def __init__(self, dictionary_view, inner):
-        self.__dictionary_view = dictionary_view
 
     @property
     def __inner(self):

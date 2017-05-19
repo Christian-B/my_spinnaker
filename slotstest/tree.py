@@ -32,6 +32,7 @@ class Seven(Five):
 
     __slots__ = ()
 
+
 try:
     class Eight(Five, Six):
 
@@ -64,6 +65,7 @@ class Twelve(object):
 
     __slots__ = ("X", "Y")
 
+
 try:
     class Thirteen(Ten, Twelve):
         pass
@@ -88,6 +90,7 @@ class Sixteen(object):
     pass
     # NO slots
 
+
 class Seventeen(Sixteen):
 
     __slots__ = ("name")
@@ -95,6 +98,7 @@ class Seventeen(Sixteen):
     def __init__(self):
         self.name = "Paul"
         self.other = 123
+
 
 class Eighteen(object):
 

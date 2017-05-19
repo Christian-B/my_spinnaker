@@ -1,6 +1,3 @@
-from six import add_metaclass
-from abc import ABCMeta
-
 from abstract_application_vertex import AbstractApplicationVertex
 
 

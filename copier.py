@@ -1,7 +1,8 @@
 import os
 import shutil
 
-for root, dirs, files in os.walk("/brenninc/spinnaker/sPyNNaker/integration_testsX", topdown=True):
+path = "/brenninc/spinnaker/sPyNNaker/integration_testsX"
+for root, dirs, files in os.walk(path, topdown=True):
     for name in files:
         if name.endswith(".py"):
             path = os.path.join(root, name)

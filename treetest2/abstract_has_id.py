@@ -1,9 +1,7 @@
-from six import add_metaclass
 from abc import abstractproperty
 
-from abstract_base import AbstractBase
 
-#@add_metaclass(AbstractBase)
+# @add_metaclass(AbstractBase)
 class AbstractHasId(object):
     """ Represents an item with a label
     """

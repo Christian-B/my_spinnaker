@@ -5,7 +5,7 @@ end = 200
 default = dict()
 default["start"] = start
 default["end"] = end
-full =  RangeDictionary (start, end, default)
+full = RangeDictionary(start, end, default)
 
 print full
 print full.all_get_ranges()

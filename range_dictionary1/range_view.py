@@ -1,5 +1,6 @@
 import collections
 
+
 class RangeView(collections.Mapping):
 
     __range_dictionary = None
@@ -16,7 +17,9 @@ class RangeView(collections.Mapping):
         return self.___range_dictionary.len_by_range(self.___range_index)
 
     def __getitem__(self, key):
-        return self.___range_dictionary.getitem_by_range(self.___range_index, key)
+        return self.___range_dictionary.getitem_by_range(self.___range_index,
+                                                         key)
 
     def __setitem__(self, key, value):
-        return self.___range_dictionary.setitem_by_range(self.___range_index, key, value)
+        return self.___range_dictionary.setitem_by_range(self.___range_index,
+                                                         key, value)

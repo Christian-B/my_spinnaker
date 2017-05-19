@@ -2,6 +2,7 @@
 
 # If usin #@add_metaclass require from six import add_metaclass
 
+
 def abstractmethod(funcobj):
     """A decorator indicating abstract methods.
 
@@ -21,6 +22,7 @@ def abstractmethod(funcobj):
     """
     funcobj.__isabstractmethod__ = True
     return funcobj
+
 
 class abstractproperty(property):
     """A decorator indicating abstract properties.
@@ -63,8 +65,7 @@ class AbstractBase(type):
     """
 
     def __new__(mcls, name, bases, namespace):
-        cls = super(AbstractBase, mcls).__new__(mcls, name, bases,
-                                                          namespace)
+        cls = super(AbstractBase, mcls).__new__(mcls, name, bases, namespace)
 
         abstracts = set(name for name, value in namespace.items() if
                         getattr(value, "__isabstractmethod__", False))
@@ -72,7 +73,6 @@ class AbstractBase(type):
             for name in getattr(base, "__abstractmethods__", set()):
                 value = getattr(cls, name, None)
                 if getattr(value, "__isabstractmethod__", False):
-                   abstracts.add(name)
+                    abstracts.add(name)
         cls.__abstractmethods__ = frozenset(abstracts)
         return cls
-

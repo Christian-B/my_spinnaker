@@ -61,8 +61,8 @@ in_proj = p.Projection(in_pos, in_pop,
 #   and standard deviation of 0.75 (sigma)
 #   (remember to add a boundary to keep the delays
 #       within the allowed range on SpiNNaker).
-rd_weights = RandomDistribution('normal', [0.1, 0.1], boundaries=(0,100))
-dist_weights = RandomDistribution('normal', [1.5, 0.75], boundaries=(0,100))
+rd_weights = RandomDistribution('normal', [0.1, 0.1], boundaries=(0, 100))
+dist_weights = RandomDistribution('normal', [1.5, 0.75], boundaries=(0, 100))
 # ex_in_proj = p.Projection(ex_pop, in_pop,
 #                          p.FixedProbabilityConnector(0.1, weights=rd_weights,
 #                                                      delays=dist_weights),
@@ -79,8 +79,8 @@ in_in_proj = p.Projection(in_pop, in_pop,
 # to a uniform random number between -65.0 and -55.0.
 rng = NumpyRNG(seed=1)
 uniformDistr = RandomDistribution('uniform', [-65, -55], rng)
-#ex_pop.initialize('v', uniformDistr)
-#in_pop.initialize('v', uniformDistr)
+# ex_pop.initialize('v', uniformDistr)
+# in_pop.initialize('v', uniformDistr)
 
 # Record the spikes from the excitatory population.
 ex_pop.record()
@@ -95,12 +95,12 @@ p.run(1000)
 v = ex_pop.get_v()
 print v
 numpy.save("v.npy", v)
-numpy.savetxt("v.csv", v, fmt=['%d','%d','%s'], delimiter=',')
-#plot_utils.heat_plot(v)
+numpy.savetxt("v.csv", v, fmt=['%d', '%d', '%s'], delimiter=',')
+# plot_utils.heat_plot(v)
 plot_utils.line_plot(v)
 
 spikes = ex_pop.getSpikes()
 print spikes
 numpy.save("spikes", spikes)
-numpy.savetxt("spikes.csv", spikes, fmt=['%d','%d'], delimiter=',')
+numpy.savetxt("spikes.csv", spikes, fmt=['%d', '%d'], delimiter=',')
 plot_utils.plot_spikes(spikes)

@@ -2,6 +2,7 @@ from six import add_metaclass
 
 from abstract_base import AbstractBase, abstractmethod, abstractproperty
 
+
 @add_metaclass(AbstractBase)
 class AbstractHasConstraints(object):
     """ Represents an object with constraints
@@ -19,7 +20,7 @@ class AbstractHasConstraints(object):
             for name in getattr(base, "__abstractmethods__", set()):
                 value = getattr(cls, name, None)
                 if getattr(value, "__isabstractmethod__", False):
-                   abstracts.add(name)
+                    abstracts.add(name)
         cls.__abstractmethods__ = frozenset(abstracts)
         return cls
 

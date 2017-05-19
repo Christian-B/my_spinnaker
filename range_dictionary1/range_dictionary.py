@@ -4,6 +4,8 @@ import copy
 from range_view import RangeView as RangeView
 from index_view import IndexView as SingleView
 from zone_view import ZoneView
+
+
 class RangeDictionary(collections.Mapping):
 
     __values = dict()
@@ -11,37 +13,41 @@ class RangeDictionary(collections.Mapping):
     __end = None
 
     def __init__(self, start, end, default):
-        self.__values[(start, end)]= default
+        self.__values[(start, end)] = default
         self.__start = start
         self.__end = end
 
     # support methods
 
     def _new_value(self, index_range, key, value):
-        if self.__values.has_key(index_range):
-            if self.__values[index_range].has_key(key):
+        if index_range in self.__values:
+            if key in self.__values[index_range]:
                 return not value == self.__values[index_range][key]
             else:
                 return True
-        raise Exception ("Ranges changed")
+        raise Exception("Ranges changed")
 
     def _check_range(self, start, end):
         if start > end:
             raise Exception("Start must be less than or equal to end")
         if start < self.__start:
-            raise Exception("Start too low {} is less than {}".format(start, self.__start))
+            raise Exception("Start too low {} is less than {}"
+                            "".format(start, self.__start))
         if end > self.__end:
-            raise Exception("Index too high {} is greater than {}".format(end, self.__end))
+            raise Exception("Index too high {} is greater than {}"
+                            "".format(end, self.__end))
 
     def _check_index(self, index):
         if index < self.__start:
-            raise Exception ("Index too low {} is less than {}".format(index, self.__start))
+            raise Exception("Index too low {} is less than {}"
+                            "".format(index, self.__start))
         if index > self.__end:
-            raise Exception ("Index too high {} is greater than {}".format(index, self.__end))
+            raise Exception("Index too high {} is greater than {}"
+                            "".format(index, self.__end))
 
     # Mapping methods
     def __iter__(self):
-         return iter(self.__values)
+        return iter(self.__values)
 
     def __len__(self):
         return len(self.__values)
@@ -57,22 +63,22 @@ class RangeDictionary(collections.Mapping):
 
     # range_index methods
     def iter_by_range(self, range_index):
-        if self.__values.has_key(range_index):
+        if range_index in self.__values:
             return iter(self.__values[range_index])
-        raise Exception ("Ranges changed")
+        raise Exception("Ranges changed")
 
     def len_by_range(self, range_index):
-        if self.__values.has_key(range_index):
+        if range_index in self.__values:
             return len(self.__values[range_index])
-        raise Exception ("Ranges changed")
+        raise Exception("Ranges changed")
 
     def getitem_by_range(self, range_index, key):
-        if self.__values.has_key(range_index):
+        if range_index in self.__values:
             return self.__values[range_index][key]
-        raise Exception ("Ranges changed")
+        raise Exception("Ranges changed")
 
     def setitem_by_range(self, range_index, key, value):
-        if self.__values.has_key(range_index):
+        if range_index in self.__values:
             self.__values[range_index][key] = value
         else:
             self.setitem_by_zone(range_index[0], range_index[1], key, value)
@@ -110,7 +116,8 @@ class RangeDictionary(collections.Mapping):
     def setitem_by_zone(self, start, end, key, value):
         index_ranges = self.get_ranges(start, end)
         # check if some of first range is kept rest a new range
-        if start > index_ranges[0][0] and self._new_value(index_ranges[0], key, value):
+        if start > index_ranges[0][0] and \
+                self._new_value(index_ranges[0], key, value):
             previous = self.__values[index_ranges[0]]
             previous_range = (index_ranges[0][0], start - 1)
             self.__values[previous_range] = previous
@@ -119,7 +126,8 @@ class RangeDictionary(collections.Mapping):
             index_ranges[0] = (start, index_ranges[0][1])
             self.__values[index_ranges[0]] = copy.copy(previous)
         # check if some of last range is kept rest a new range
-        if end < index_ranges[-1][1] and self._new_value(index_ranges[-1], key, value):
+        if end < index_ranges[-1][1] and \
+                self._new_value(index_ranges[-1], key, value):
             previous = self.__values[index_ranges[-1]]
             previous_range = (end + 1, index_ranges[-1][1])
             self.__values[previous_range] = previous
@@ -147,7 +155,7 @@ class RangeDictionary(collections.Mapping):
 
     def len_by_index(self, index):
         range_index = self.get_range(index)
-        return len(self.__values[ range_index])
+        return len(self.__values[range_index])
 
     def getitem_by_index(self, index, key):
         range_index = self.get_range(index)
@@ -158,4 +166,3 @@ class RangeDictionary(collections.Mapping):
 
     def get_view_by_index(self, index):
         return SingleView(self, index)
-

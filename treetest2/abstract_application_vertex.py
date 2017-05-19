@@ -1,9 +1,3 @@
-from abc import ABCMeta
-from abc import abstractmethod
-from abc import abstractproperty
-
-from six import add_metaclass
-
 from abstract_vertex import AbstractVertex
 
 
@@ -13,4 +7,3 @@ class AbstractApplicationVertex(AbstractVertex):
     """
 
     __slots__ = ()
-

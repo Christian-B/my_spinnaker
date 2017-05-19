@@ -26,9 +26,10 @@ weight_rule = p.AdditiveWeightDependence(w_max=5.0, w_min=0.0, A_plus=0.5,
                                          A_minus=0.5)
 stdp_model = p.STDPMechanism(timing_dependence=timing_rule,
                              weight_dependence=weight_rule)
+synapse_dynamics = p.SynapseDynamics(slow=stdp_model)
 stdp_projection = p.Projection(pre_pop, post_pop,
                                p.OneToOneConnector(weights=0.0, delays=5.0),
-synapse_dynamics=p.SynapseDynamics(slow=stdp_model))
+                               synapse_dynamics=synapse_dynamics)
 
 # Stimulate each of the neurons with a spike source array
 # with times of your choice,
@@ -58,11 +59,11 @@ p.run(2000)
 # extract the spike times of the neurons and the weights.
 pre_spikes = pre_pop.getSpikes()
 numpy.save("pre_spikes", pre_spikes)
-numpy.savetxt("pre_spikes.csv", pre_spikes, fmt=['%d','%d'], delimiter=',')
+numpy.savetxt("pre_spikes.csv", pre_spikes, fmt=['%d', '%d'], delimiter=',')
 
 post_spikes = post_pop.getSpikes()
 numpy.save("post_spikes", post_spikes)
-numpy.savetxt("post_spikes.csv", post_spikes, fmt=['%d','%d'], delimiter=',')
+numpy.savetxt("post_spikes.csv", post_spikes, fmt=['%d', '%d'], delimiter=',')
 
 plot_utils.plot_spikes(pre_spikes, post_spikes)
 

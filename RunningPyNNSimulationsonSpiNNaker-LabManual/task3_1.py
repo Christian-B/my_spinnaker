@@ -9,10 +9,10 @@ import plot_utils
 
 import numpy
 
-numpy.random.seed(1);
+numpy.random.seed(1)
 
 # Set up the simulation to use 0.1ms timesteps.
-#p.setup(timestep=0.1)
+# p.setup(timestep=0.1)
 p.setup(timestep=1)
 
 # Choose the number of neurons to be simulated in the network.
@@ -59,8 +59,8 @@ in_proj = p.Projection(in_pos, in_pop,
 #   and standard deviation of 0.75 (sigma)
 #   (remember to add a boundary to keep the delays
 #       within the allowed range on SpiNNaker).
-rd_weights = RandomDistribution('normal', [0.1, 0.1], boundaries=(0,100))
-dist_weights = RandomDistribution('normal', [1.5, 0.75], boundaries=(0,100))
+rd_weights = RandomDistribution('normal', [0.1, 0.1], boundaries=(0, 100))
+dist_weights = RandomDistribution('normal', [1.5, 0.75], boundaries=(0, 100))
 # ex_in_proj = p.Projection(ex_pop, in_pop,
 #                          p.FixedProbabilityConnector(0.1, weights=rd_weights,
 #                                                      delays=dist_weights),
@@ -93,12 +93,12 @@ p.run(2000)
 v = ex_pop.get_v()
 print v
 numpy.save("v.npy", v)
-numpy.savetxt("v.csv", v, fmt=['%d','%d','%s'], delimiter=',')
+numpy.savetxt("v.csv", v, fmt=['%d', '%d', '%s'], delimiter=',')
 plot_utils.heat_plot(v)
-#plot_utils.line_plot(v)
+# plot_utils.line_plot(v)
 
 spikes = ex_pop.getSpikes()
 print spikes
 numpy.save("spikes", spikes)
-numpy.savetxt("spikes.csv", spikes, fmt=['%d','%d'], delimiter=',')
+numpy.savetxt("spikes.csv", spikes, fmt=['%d', '%d'], delimiter=',')
 plot_utils.plot_spikes(spikes)

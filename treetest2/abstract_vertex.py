@@ -1,6 +1,3 @@
-from six import add_metaclass
-
-
 from abstract_has_constraints \
     import AbstractHasConstraints
 from abstract_has_label \

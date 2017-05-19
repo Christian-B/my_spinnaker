@@ -1,5 +1,6 @@
 from abstract_view import AbstractView
 
+
 class IndexView(AbstractView):
 
     __index = None
@@ -19,11 +20,11 @@ class IndexView(AbstractView):
         return self.__range_dictionary.getitem_by_index(self.__index, key)
 
     def __setitem__(self, key, value):
-        return self.__range_dictionary.setitem_by_index(self.__index, key, value)
+        return self.__range_dictionary.setitem_by_index(self.__index,
+                                                        key, value)
 
     def get_index(self):
         return self.__index
 
     def __str__(self):
-        return str(self.__index) + ": " +  self.data_string()
-
+        return str(self.__index) + ": " + self.data_string()
