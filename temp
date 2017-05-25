@@ -1,0 +1,91 @@
+Shared all
+add_socket_address
+buffer_manager
+config
+graph_mapper
+has_ran
+increment_none_labelled_vertex_count()
+machine
+machine_time_step
+no_machine_time_steps
+placements
+run(run_time)
+stop()
+transceiver
+
+
+
+===========
+
+spynakker common
+reset()
+
+===========
+
+Seven init
+create_population(size, cellclass, cellparams, structure, label)
+create_projection(presynaptic_population, postsynaptic_population, connector, source, target, synapse_dynamics, label, rng)
+get_current_time()
+max_supported_delay
+min_supported_delay
+set_number_of_neurons_per_core(neuron_type, max_permitted)
+
+
+sPyNNaker code
+get_distribution_to_stats()
+get_pynn_NumpyRNG()
+has_reset_last
+is_a_pynn_random(delays)
+none_labelled_vertex_count
+use_virtual_board
+
+
+
+Eight init
+clear()
+name
+write_on_end
+
+
+eight code
+dt
+graph_mapper
+id_counter
+min_delay
+num_processes
+segment_counter
+t
+
+
+Spynnaker8FailedState.run_for
+Spynnaker8FailedState.get_current_time
+Spynnaker8FailedState.get_time_step
+Spynnaker8FailedState.get_min_delay
+Spynnaker8FailedState.get_max_delay
+Spynnaker8FailedState.num_processes
+Spynnaker8FailedState.rank
+Spynnaker8FailedState.initialize
+Spynnaker8FailedState.create
+Spynnaker8FailedState.connect
+
+
+GraphFrontEnd
+add_application_edge
+application_graph
+add_application_vertex(vertex)
+add_machine_vertex(vertex_to_add)
+
+get_machine_dimensions()
+is_allocated_machine
+
+machine_graph
+read_xml_file(file_path)
+routing_infos
+time_scale_factor
+
+
+
+External Devices
+add_application_vertex
+add_application_edge
+timescale_factor
