@@ -1,24 +1,6 @@
 Shared all
-add_socket_address
-buffer_manager
-config
-graph_mapper
-has_ran
-increment_none_labelled_vertex_count()
-machine
-machine_time_step
-no_machine_time_steps
-placements
-run(run_time)
-stop()
-transceiver
 
 
-
-===========
-
-spynakker common
-reset()
 
 ===========
 
@@ -34,7 +16,6 @@ set_number_of_neurons_per_core(neuron_type, max_permitted)
 sPyNNaker code
 get_distribution_to_stats()
 get_pynn_NumpyRNG()
-has_reset_last
 is_a_pynn_random(delays)
 none_labelled_vertex_count
 use_virtual_board
