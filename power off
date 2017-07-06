@@ -1,0 +1,7 @@
+ybug 192.168.240.1 -bmp 192.168.240.0
+
+power off
+
+power on
+
+quit

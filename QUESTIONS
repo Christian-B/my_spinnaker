@@ -1,0 +1,7 @@
+PyNNPopulationCommon why can size be None?
+
+population no property celltype
+
+celltype.default_initial_values
+
+celltype.recordable
