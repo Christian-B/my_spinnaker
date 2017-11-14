@@ -1,6 +1,6 @@
 try:
     import pyNN.spiNNaker as p
-except:
+except Exception:
     import spynnaker.pyNN as p
 
 from pyNN.random import NumpyRNG, RandomDistribution

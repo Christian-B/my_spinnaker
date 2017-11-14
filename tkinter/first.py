@@ -13,8 +13,8 @@ def ex1():
 def ex2():
     # firstTkinter2.py
     top = tk.Tk()
-    l = tk.Label(top, text="Hello World")
-    l.pack()
+    lab = tk.Label(top, text="Hello World")
+    lab.pack()
     # Give the window a title.
     top.title("My App")
     # Change the minimum size.
@@ -33,8 +33,8 @@ class MyApp1(tk.Frame):
         # Construct the Frame object.
         tk.Frame.__init__(self, master)
         self.pack()
-        self.l = tk.Label(self, text="My Button:")
-        self.l.pack()
+        self.lab = tk.Label(self, text="My Button:")
+        self.lab.pack()
         self.b = tk.Button(self, text="Hello", command=self.hello)
         self.b.pack()
 

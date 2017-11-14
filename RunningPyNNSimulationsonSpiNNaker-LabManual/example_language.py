@@ -1,6 +1,6 @@
 try:
     import pyNN.spiNNaker as p
-except:
+except Exception:
     import spynnaker.pyNN as p
 import pylab
 

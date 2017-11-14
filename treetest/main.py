@@ -17,7 +17,7 @@ mid2 = datetime.datetime.now()
 for i in range(loops):
     try:
         vertex.has_label()
-    except:
+    except Exception:
         print "oops"
 end = datetime.datetime.now()
 print mid - start
