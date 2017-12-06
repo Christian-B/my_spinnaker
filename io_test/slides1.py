@@ -3,11 +3,13 @@ import spynnaker8 as p
 INJECTOR_LABEL = "injector"
 RECEIVER_LABEL = "receiver"
 
+
 # declare python code when received spikes for a timer tick
 def receive_spikes(label, time, neuron_ids):
     for neuron_id in neuron_ids:
         print "Received spike at time {} from {}-{}" \
               "".format(time, label, neuron_id)
+
 
 p.setup(timestep=1.0)
 p1 = p.Population(1, p.IF_curr_exp(), label="pop_1")

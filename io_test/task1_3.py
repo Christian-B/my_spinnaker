@@ -1,7 +1,4 @@
 import spynnaker8 as sim
-import spynnaker8.spynnaker_plotting as splot
-import pyNN.utility.plotting as plot
-import matplotlib.pyplot as plt
 
 simtime = 2000
 n_neurons = 7
@@ -12,13 +9,15 @@ INJECTOR_LABEL = "injector"
 
 # set up python live spike connection
 live_spikes_connection = sim.external_devices.SpynnakerLiveSpikesConnection(
-    receive_labels=[RECEIVER_LABEL], send_labels = [INJECTOR_LABEL])
+    receive_labels=[RECEIVER_LABEL], send_labels=[INJECTOR_LABEL])
+
 
 # declare python code when received spikes for a timer tick
 def receive_spikes(label, time, neuron_ids):
     for neuron_id in neuron_ids:
         print "Received spike at time {} from {}-{}" \
               "".format(time, label, neuron_id)
+
 
 # create python injector
 def send_spike(label, sender):
@@ -58,4 +57,3 @@ spikes = s_neo.segments[0].spiketrains
 print spikes
 
 sim.end()
-
