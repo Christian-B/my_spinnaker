@@ -63,7 +63,7 @@ def solve_number_10():
 start = time.time()
 solve_number_10()
 end = time.time()
-print end - start
+print(end - start)
 
 
 """
