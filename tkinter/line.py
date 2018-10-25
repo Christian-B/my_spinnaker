@@ -33,7 +33,7 @@ class Line(object):
             self.corner2 is corner
         else:
             oops = 1/0
-            print oops
+            print(oops)
 
     def _set_colour(self, colour):
         self.canvas.delete("all")
@@ -44,7 +44,7 @@ class Line(object):
             self.canvas.create_rectangle(0, 0, self.NARROW, self.WIDE,
                                          fill=colour)
         self.canvas.update()
-        print "set:", self.row, self.column, self.horizontal, colour
+        print("set:", self.row, self.column, self.horizontal, colour)
 
     def set_empty(self):
         self._set_colour("red")
@@ -64,9 +64,9 @@ class Line(object):
                 self.self.line_number = self.corner1.line_number
             if self.corner1.line_number == self.corner2.line_number:
                 if full_lines == 1:
-                    print "You win"
+                    print("You win")
                     winner = 1/0
-                    print winner
+                    print(winner)
                 else:
                     return False
             else:

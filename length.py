@@ -7,7 +7,7 @@ class IterOnly(object):
 
 test = IterOnly()
 for x in test:
-    print x
+    print(x)
 
-print test[3]
-print len(test)
+print(test[3])
+print(len(test))

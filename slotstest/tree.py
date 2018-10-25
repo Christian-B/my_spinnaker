@@ -39,7 +39,7 @@ try:
         __slots__ = ()
 
 except TypeError:
-    print "Diamonds not allowed with slots"
+    print("Diamonds not allowed with slots")
 
 
 class Nine(Five):
@@ -58,7 +58,7 @@ try:
         __slots__ = ()
 
 except TypeError:
-    print "Same slot in two parent"
+    print("Same slot in two parent")
 
 
 class Twelve(object):
@@ -71,7 +71,7 @@ try:
         pass
 
 except TypeError:
-    print "Two different slots"
+    print("Two different slots")
 
 
 class Fourteen(object):
@@ -83,7 +83,7 @@ try:
     class Fifeteen(Fourteen, Ten):
         pass
 except TypeError:
-    print "slots in two parent"
+    print("slots in two parent")
 
 
 class Sixteen(object):
@@ -108,20 +108,20 @@ class Eighteen(object):
 
 
 four = Four()
-print four
+print(four)
 
 nine = Nine()
-print nine
+print(nine)
 
 seventeen = Seventeen()
-print seventeen.other
+print(seventeen.other)
 
 eighteen = Eighteen()
 eighteen1 = Eighteen()
-print eighteen
-print eighteen.BULLY
+print(eighteen)
+print(eighteen.BULLY)
 eighteen1.BULLY = "xyz"
 Eighteen.BULLY = "bar"
-print eighteen.BULLY
-print eighteen1
-print eighteen1.BULLY
+print(eighteen.BULLY)
+print(eighteen1)
+print(eighteen1.BULLY)

@@ -46,5 +46,5 @@ def not_covered(first, second):
 for pattern1 in patterns("", 2):
     for pattern2 in patterns("", 2):
         if compare(pattern1, pattern2) in ["overlap", "wider"]:
-            print pattern1, pattern2, compare(pattern1, pattern2), \
-                not_covered(pattern1, pattern2)
+            print(pattern1, pattern2, compare(pattern1, pattern2),
+                  not_covered(pattern1, pattern2))

@@ -19,21 +19,21 @@ class Corner(object):
                 full += 1
             if line.is_empty:
                 empty += 1
-        print self.row, self.column, full, empty, len(self.lines)
+        print(self.row, self.column, full, empty, len(self.lines))
         if full + empty == len(self.lines):
             return False
         if full == 2:
-            print "two lines so other empty"
+            print("two lines so other empty")
             for line in self.lines:
                 if not line.is_full:
                     line.set_empty()
                 else:
-                    print "skip ", line.column, line.row, line.horizontal
+                    print("skip ", line.column, line.row, line.horizontal)
                 self.done = True
             return True
         elif full == 1:
             if len(self.lines) - empty == 2:
-                print "One line and one option"
+                print("One line and one option")
                 for line in self.lines:
                     if not line.is_empty:
                         line.set_full()
@@ -41,7 +41,7 @@ class Corner(object):
                 return True
         else:
             if len(self.lines) - empty == 1:
-                print "only one still empty"
+                print("only one still empty")
                 for line in self.lines:
                     if not line.is_full:
                         line.set_empty()

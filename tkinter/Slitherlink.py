@@ -26,7 +26,7 @@ class Board(object):
         next_button.grid(row=0, column=1)
 
         values = self.read_values()
-        print values
+        print(values)
         self.max_row = len(values)
         self.max_col = len(values[0])
 
@@ -110,10 +110,10 @@ class Board(object):
             for column in range(self.max_col):
                 if not self.matrix[row][column].done:
                     not_done += 1
-        print "not done: ", not_done
+        print("not done: ", not_done)
 
     def check(self):
-        print "==="
+        print("===")
         for row in range(self.max_row):
             for column in range(self.max_col):
                 if self.matrix[row][column].check_values():
@@ -128,7 +128,7 @@ class Board(object):
             for column in range(self.max_col):
                 if self.matrix[row][column].value == 3:
                     if self.matrix[row+1][column].value == 3:
-                        print "3 3 detected horizontal", row, column
+                        print("3 3 detected horizontal", row, column)
                         self.horizontal_walls[row][column].set_full()
                         self.horizontal_walls[row + 1][column].set_full()
                         self.horizontal_walls[row + 2][column].set_full()
@@ -136,7 +136,7 @@ class Board(object):
             for column in range(self.max_col - 1):
                 if self.matrix[row][column].value == 3:
                     if self.matrix[row][column + 1].value == 3:
-                        print "3 3 detected vertical", row, column
+                        print("3 3 detected vertical", row, column)
                         self.vertical_walls[row][column].set_full()
                         self.vertical_walls[row][column + 1].set_full()
                         self.vertical_walls[row][column + 2].set_full()

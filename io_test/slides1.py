@@ -7,8 +7,8 @@ RECEIVER_LABEL = "receiver"
 # declare python code when received spikes for a timer tick
 def receive_spikes(label, time, neuron_ids):
     for neuron_id in neuron_ids:
-        print "Received spike at time {} from {}-{}" \
-              "".format(time, label, neuron_id)
+        print("Received spike at time {} from {}-{}"
+              "".format(time, label, neuron_id))
 
 
 p.setup(timestep=1.0)
@@ -31,6 +31,6 @@ p.run(50)
 
 neo = p1.get_data(["spikes", "v"])
 spikes = neo.segments[0].spiketrains
-print spikes
+print(spikes)
 v = neo.segments[0].filter(name='v')[0]
-print v
+print(v)

@@ -41,7 +41,7 @@ class MyApp1(tk.Frame):
     # Function called when the button
     # is pressed.
     def hello(self):
-        print "Hello"
+        print("Hello")
 
 
 class App2:
@@ -58,7 +58,7 @@ class App2:
         self.hi_there.pack(side=tk.LEFT)
 
     def say_hi(self):
-        print "hi there, everyone!"
+        print("hi there, everyone!")
 
 
 class App3:

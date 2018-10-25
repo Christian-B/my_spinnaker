@@ -25,8 +25,8 @@ seg.analogsignals.append(a)
 seg1 = blk.segments[0]
 a1 = seg1.analogsignals[0]
 chx1 = a1.channel_index
-print chx1
-print chx1.index
+print(chx1)
+print(chx1.index)
 
 io = neo.io.PickleIO(filename="test.pickle")
 io.write(blk)
@@ -37,11 +37,11 @@ with open("test.pickle", "r") as pickle_file:
 seg2 = blk2.segments[0]
 a2 = seg2.analogsignals[0]
 chx2 = a2.channel_index
-print chx2
+print(chx2)
 # print chx2.index
 
-print a2.shape
-print type(a2.shape)
+print(a2.shape)
+print(type(a2.shape))
 n_neurons = a2.shape[-1]
 ids = np.arange(n_neurons)
-print ids
+print(ids)

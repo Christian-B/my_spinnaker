@@ -16,7 +16,7 @@ class MyTest(unittest.TestCase):
         while True:
             x = fun(x)
             if x >= y:
-                print x
+                print(x)
                 x = 0
                 y += 1
 
@@ -26,6 +26,6 @@ class MyTest(unittest.TestCase):
         while True:
             x = fun(x)
             if x >= y:
-                print x
+                print(x)
                 x = 0
                 y += 1

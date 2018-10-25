@@ -13,7 +13,7 @@ loop_conns = list()
 for i in range(0, 15, 4):
     single_connection = (0, i)
     loop_conns.append(single_connection)
-print loop_conns
+print(loop_conns)
 input_proj = sim.Projection(input, pop_1, sim.FromListConnector(loop_conns),
                             synapse_type=sim.StaticSynapse(weight=5, delay=1))
 pop_1.record("spikes")
@@ -27,8 +27,8 @@ neo = pop_1.get_data()
 
 # neo = pop_1.get_data(variables=["spikes", "v"])
 spikes = neo.segments[0].spiketrains
-print spikes
-print len(spikes)
+print(spikes)
+print(len(spikes))
 # spikes = neo.segments[1].spiketrains
 # print spikes
 # print len(spikes)

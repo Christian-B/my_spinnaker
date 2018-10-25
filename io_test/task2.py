@@ -17,8 +17,8 @@ live_spikes_connection = sim.external_devices.SpynnakerLiveSpikesConnection(
 # declare python code when received spikes for a timer tick
 def receive_spikes(label, time, neuron_ids):
     for neuron_id in neuron_ids:
-        print "Received spike at time {} from {}-{}" \
-              "".format(time, label, neuron_id)
+        print("Received spike at time {} from {}-{}"
+              "".format(time, label, neuron_id))
         if neuron_id + 1 == n_neurons:
             if label == RECEIVER_LABEL1:
                 live_spikes_connection.send_spike(
@@ -55,7 +55,7 @@ loop_conns = list()
 for i in range(0, n_neurons - 1):
     single_connection = (i, i + 1, weight_to_spike, delay)
     loop_conns.append(single_connection)
-print loop_conns
+print(loop_conns)
 
 input_proj = sim.Projection(input, synfire1, sim.OneToOneConnector(),
                             synapse_type=sim.StaticSynapse(weight=5, delay=1))

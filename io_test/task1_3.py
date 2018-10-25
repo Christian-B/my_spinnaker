@@ -15,8 +15,8 @@ live_spikes_connection = sim.external_devices.SpynnakerLiveSpikesConnection(
 # declare python code when received spikes for a timer tick
 def receive_spikes(label, time, neuron_ids):
     for neuron_id in neuron_ids:
-        print "Received spike at time {} from {}-{}" \
-              "".format(time, label, neuron_id)
+        print("Received spike at time {} from {}-{}"
+              "".format(time, label, neuron_id))
 
 
 # create python injector
@@ -54,6 +54,6 @@ sim.run(simtime)
 
 s_neo = pop.get_data(variables=["spikes"])
 spikes = s_neo.segments[0].spiketrains
-print spikes
+print(spikes)
 
 sim.end()

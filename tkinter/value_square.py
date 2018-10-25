@@ -22,14 +22,14 @@ class ValueSquare(Square):
             return  # all done
             self.done = True
         if self.value == min:
-            print self.row, self.column, "Rest empty"
+            print(self.row, self.column, "Rest empty")
             for line in self.lines:
                 if not line.is_full:
                     line.set_empty()
             self.done = True
             return True
         if self.value == max:
-            print self.row, self.column, "Rest full"
+            print(self.row, self.column, "Rest full")
             for line in self.lines:
                 if not line.is_empty:
                     line.set_full()

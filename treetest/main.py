@@ -18,8 +18,8 @@ for i in range(loops):
     try:
         vertex.has_label()
     except Exception:
-        print "oops"
+        print("oops")
 end = datetime.datetime.now()
-print mid - start
-print mid2 - mid
-print end - mid2
+print(mid - start)
+print(mid2 - mid)
+print(end - mid2)

@@ -1,6 +1,6 @@
 import enum
 
-print enum.version
+print(enum.version)
 
 
 class GrandParent(object):
@@ -26,24 +26,24 @@ class Child(Parent1, Parent2):
 def subclasses_test(aclass):
     if not isinstance(aclass, type):
         aclass = type(aclass)
-    print "subclasses_test"
+    print("subclasses_test")
     names = set()
     for sub in aclass.mro():
-        print "sub", sub
+        print("sub", sub)
         """
         if sub in GrandParent.__subclasses__():
             print sub.name()
         else:
             try:
-                print sub.name()
+                print(sub.name())
             except:
-                print "no name"
-            print "skip"
+                print("no name")
+            print("skip")
         """
         if issubclass(sub, GrandParent) and not sub == GrandParent:
             names.add(sub.name())
-    print list(names)
-    print "==========="
+    print(list(names))
+    print("===========")
 
 
 # print(vars()['GrandParent'].__subclasses__())

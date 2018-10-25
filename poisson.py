@@ -8,4 +8,4 @@ for i in range(5):
     p.run(100)
 spikes = pop_src.get_data("spikes")
 p.end()
-print spikes.segments[0].spiketrains
+print(spikes.segments[0].spiketrains)

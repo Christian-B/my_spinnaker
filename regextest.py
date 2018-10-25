@@ -7,23 +7,23 @@ import re
 # Type field [acdefignopsuxAFEGX]
 # REGEXP = re.compile("%(\d+$)?[-\+ 0#]?\d+?[acdefignopsuxAFEGX]")
 
-REGEXP = re.compile("%\d*(?:\.\d+)?[diksuxR]")
+REGEXP = re.compile(r"%\d*(?:\.\d+)?[diksuxR]")
 
-STRING_REGEXP = re.compile('"([^"]|\\"|(""))*"')
+STRING_REGEXP = re.compile(r'"([^"]|\\"|(""))*"')
 
 message_id = 0
 
 
 def find(text):
-    print (text)
+    print(text)
     match = REGEXP.search(text)
     if match is None:
-        print ("NOT FOUND")
+        print("NOT FOUND")
     else:
-        print ("{} start: {} end {}".format(
+        print("{} start: {} end {}".format(
             match.group(0), match.start(), match.end()))
         for group in match.groups():
-            print (group)
+            print(group)
 
 
 def shorten(text):
@@ -46,6 +46,6 @@ def shorten(text):
 with open("/home/brenninc/spinnaker/sPyNNaker/neural_modelling/messages.txt") \
         as src:
     for line in src:
-        print (line)
+        print(line)
         text = STRING_REGEXP.search(line).group(0)
-        print (shorten(text))
+        print(shorten(text))

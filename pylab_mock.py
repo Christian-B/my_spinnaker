@@ -24,4 +24,4 @@ class PylabMock():
         pass
 
     def show(self, *args, **kw):
-        print "SKIPPING PLOTING AS {}".format(self._message)
+        print("SKIPPING PLOTING AS {}".format(self._message))

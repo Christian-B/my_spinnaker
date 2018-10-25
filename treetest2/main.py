@@ -19,6 +19,6 @@ mid2 = datetime.datetime.now()
 for i in range(loops):
     isinstance(vertex, AbstractHasId)
 end = datetime.datetime.now()
-print mid - start
-print mid2 - mid
-print end - mid2
+print(mid - start)
+print(mid2 - mid)
+print(end - mid2)

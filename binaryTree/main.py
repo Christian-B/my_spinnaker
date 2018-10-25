@@ -8,8 +8,8 @@ def check_list(a_list):
     assert tree.balanced()
     assert len(tree) == i + 1
     tree.show(6)
-    print "====================================="
-    print list(tree)
+    print("=====================================")
+    print(list(tree))
 
 
 check_list([1, 2, 3])
@@ -35,4 +35,4 @@ check_list([283, 404,  23, 590, 546,  53, 570, 846, 543, 300, 728, 347, 846,
 #b = sorted(a_list)
 #check_list(a_list)
 """
-print "done"
+print("done")

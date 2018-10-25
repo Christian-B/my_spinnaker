@@ -32,7 +32,7 @@ class C(SpikeRecorder, GsynRecorder, VRecorder):
 
 
 c = C()
-print c.recordable
+print(c.recordable)
 
 
 class RecorderAlan(object):
@@ -70,7 +70,7 @@ class Alan(SpikeRecorderAlan, GsynRecorderAlan, VRecorderAlan):
 
 
 alan = Alan()
-print alan.recordable
+print(alan.recordable)
 
 
 class Recorder3(object):
@@ -116,7 +116,7 @@ class Three(SpikeRecorder3, VRecorder3, GsynRecorder3):
 
 
 three = Three()
-print three.recordable
+print(three.recordable)
 
 
 class WithIter(object):
@@ -127,4 +127,4 @@ class WithIter(object):
 
 
 a = WithIter()
-print a.recordable
+print(a.recordable)

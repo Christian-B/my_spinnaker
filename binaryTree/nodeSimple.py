@@ -12,7 +12,7 @@ def show(node, tab=""):
     if node is None:
         return
     show(node.left, tab+"    ")
-    print tab, node.value
+    print(tab, node.value)
     show(node.right, tab+"    ")
 
 
