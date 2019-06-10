@@ -8,7 +8,7 @@ def fun(x):
 
 class MyTest(unittest.TestCase):
     def test(self):
-        self.assertEquals(fun(3), 5)
+        self.assertEqual(fun(3), 5)
 
     def test_hang(self):
         x = 0
