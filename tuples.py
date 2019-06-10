@@ -4,12 +4,14 @@ its = 1000
 
 start = time.time()
 
+
 def a(xy):
     x, y = xy
-    d = x + y
+    d = x + y  # noqa f841
+
 
 def b(xy):
-    d = xy[0] + xy[1]
+    d = xy[0] + xy[1]  # noqa f841
 
 
 for i in range(its):

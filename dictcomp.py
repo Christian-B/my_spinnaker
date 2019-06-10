@@ -46,14 +46,14 @@ start = time.time()
 for x in range(1000):
     for i in range(100):
         for j in range(100):
-            a = direct[(i,j)]
+            a = direct[(i, j)]
 end = time.time()
 print("direct", end - start)
 
 start = time.time()
 for x in range(1000):
     for tuple in tuplelist:
-            a = direct[tuple]
+        a = direct[tuple]
 end = time.time()
 print("tuple", end - start)
 
