@@ -1,9 +1,6 @@
 from spinn_utilities.matrix.abstract_matrix import AbstractMatrix
 
-try:
-    from collections.abc import defaultdict
-except ImportError:
-    from collections import defaultdict
+from collections import defaultdict
 
 
 class DemoMatrix(AbstractMatrix):
