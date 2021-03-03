@@ -22,13 +22,9 @@ CREATE TABLE IF NOT EXISTS local_metadata(
 	source_name STRING NOT NULL,
 	variable_name STRING NOT NULL,
 	table_name STRING NOT NULL,
-	first_neuron_id INTEGER NOT NULL,
-	n_neurons INTEGER NOT NULL,
-	neuron_ids STRING NOT NULL);
+	first_neuron_id INTEGER NOT NULL);
 
 CREATE TABLE IF NOT EXISTS global_metadata(
 	source_name STRING NOT NULL,
 	variable_name STRING NOT NULL,
-	view_name STRING NOT NULL,
-	n_neurons INTEGER NOT NULL,
-	neuron_ids STRING NOT NULL);
+	view_name STRING NOT NULL);

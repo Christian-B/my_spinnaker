@@ -38,6 +38,8 @@ class SqlLiteDatabase(object):
         "_db",
     ]
 
+    META_TABLES = ["global_metadata", "local_metadata"]
+
     def __init__(self, database_file=None):
         """
         :param str database_file: The name of a file that contains (or will\
@@ -87,55 +89,46 @@ class SqlLiteDatabase(object):
         with self._db:
             for row in self._db.execute(
                     """
-                    SELECT table_name, neuron_ids, n_neurons 
+                    SELECT table_name
                     FROM local_metadata
                     WHERE source_name = ? AND variable_name = ? 
                         AND first_neuron_id = ?
                     LIMIT 1
                     """, (source_name, variable_name, neuron_ids[0])):
-                return row["table_name"], row["neuron_ids"], row["n_neurons"]
+                return row["table_name"]
 
         table_name = source_name + "_" + variable_name + "_" + str(neuron_ids[0])
         neuron_ids_str = ",".join(["'" + str(id) + "'" for id in neuron_ids])
         self._db.execute(
             """
             INSERT INTO local_metadata(
-                source_name, variable_name, table_name, first_neuron_id, 
-                n_neurons, neuron_ids) 
-            VALUES(?,?,?,?,?,?)
-            """, (source_name, variable_name, table_name, neuron_ids[0],
-                  len(neuron_ids), neuron_ids_str))
+                source_name, variable_name, table_name, first_neuron_id) 
+            VALUES(?,?,?,?)
+            """, (source_name, variable_name, table_name, neuron_ids[0]))
 
         ddl_statement = "CREATE TABLE {} (timestamp, {})".format(
             table_name, neuron_ids_str)
         self._db.execute(ddl_statement)
-        return table_name, neuron_ids_str, len(neuron_ids)
+        return table_name
 
     def _get_global_metadata(self, source_name, variable_name):
         with self._db:
             for row in self._db.execute(
                     """
-                    SELECT view_name, neuron_ids, n_neurons FROM global_metadata
+                    SELECT view_name FROM global_metadata
                     WHERE source_name = ? AND variable_name = ?
                     LIMIT 1
                     """, (source_name, variable_name)):
-                return row["view_name"], row["neuron_ids"], row["n_neurons"]
+                return row["view_name"]
 
             table_names = []
-            neuron_ids = None
-            n_neurons = 0
             for row in self._db.execute(
                     """
-                    SELECT table_name, neuron_ids, n_neurons FROM local_metadata
+                    SELECT table_name FROM local_metadata
                     WHERE source_name = ? AND variable_name = ?
                     ORDER BY first_neuron_id
                     """, (source_name, variable_name)):
                 table_names.append(row["table_name"])
-                if  neuron_ids is None:
-                    neuron_ids = row["neuron_ids"]
-                else:
-                    neuron_ids = "," + row["neuron_ids"]
-                n_neurons += row["n_neurons"]
 
             view_name = source_name + "_" + variable_name
             ddl_statement = "CREATE VIEW {} AS SELECT * FROM {}".format(
@@ -144,33 +137,54 @@ class SqlLiteDatabase(object):
             self._db.execute(
                 """
                 INSERT INTO global_metadata(
-                    source_name, variable_name, view_name, n_neurons, neuron_ids) 
-                VALUES(?,?,?,?,?)
+                    source_name, variable_name, view_name) 
+                VALUES(?,?,?)
                 """,
-                (source_name, variable_name, view_name, n_neurons, neuron_ids))
+                (source_name, variable_name, view_name))
 
-            return view_name, neuron_ids, n_neurons
+            cursor = self._db.cursor()
+            cursor.execute("SELECT * FROM {}".format(view_name))
+            names = [description[0] for description in cursor.description]
+
+            fields = names[0]
+            for name in names[1:]:
+                fields += ", '{0}' / 65536.0 AS '{0}'".format(name)
+            ddl_statement = "CREATE VIEW {} AS SELECT {} FROM {}".format(
+                view_name+"_as_float", fields, view_name)
+            self._db.execute(ddl_statement)
+
+            return view_name
 
     def insert_items(self, source_name, variable_name, neuron_ids, data):
-        table_name, neuron_ids_str, n_neurons = self._get_local_metadata(
+        table_name = self._get_local_metadata(
             source_name, variable_name, neuron_ids)
-        query = "INSERT INTO {}(timestamp, {}) VALUES (?{})".format(
-            table_name, neuron_ids_str, (",?" * n_neurons))
-        print(query)
         with self._db:
             cursor = self._db.cursor()
+            cursor.execute("SELECT * FROM {}".format(table_name))
+            query = "INSERT INTO {} VALUES ({})".format(
+                table_name, ",".join("?" for _ in cursor.description))
+            print(query)
             cursor.executemany(query, data)
 
     def clear_ds(self):
         """ Clear all saved data specification data
         """
         with self._db:
-            tables_names = [row["table_name"]
+            names = [row["name"]
                             for row in self._db.execute(
-                    "SELECT table_name FROM local_metadata")]
-            for table_name in tables_names:
-                self._db.execute("DROP TABLE " + table_name)
+                    "SELECT name FROM sqlite_master WHERE type='table'")]
+            for name in self.META_TABLES:
+                names.remove(name)
+            for name in names:
+                self._db.execute("DROP TABLE " + name)
             self._db.execute("DELETE FROM local_metadata")
+            names = [row["name"]
+                            for row in self._db.execute(
+                    "SELECT name FROM sqlite_master WHERE type='view'")]
+            for name in names:
+                self._db.execute("DROP VIEW " + name)
+            for name in self.META_TABLES:
+                self._db.execute("DELETE FROM " + name)
 
     def get_variable_map(self):
         variables = defaultdict(list)
@@ -191,10 +205,10 @@ class SqlLiteDatabase(object):
                 self._get_global_metadata(source_name, variable_name)
 
     def get_data(self, source_name, variable_name):
-        view_name, neuron_ids_str, n_neurons = self._get_global_metadata(
-            source_name, variable_name)
+        view_name = self._get_global_metadata(source_name, variable_name)
         with self._db:
-            query = "SELECT * FROM {}".format(view_name)
-            args = neuron_ids_str.split("'")
-            args.insert(0, "timestamp")
-            return [row[:] for row in self._db.execute(query)]
+            cursor = self._db.cursor()
+            cursor.execute("SELECT * FROM {}".format(view_name))
+            names = [description[0] for description in cursor.description]
+            data = [list(row[:]) for row in cursor.fetchall()]
+            return names, data

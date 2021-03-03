@@ -22,7 +22,7 @@ def random_data(timesteps, neuron_ids):
         line = []
         line.append(timestep)
         for _ in neuron_ids:
-            line.append(random.randint(0, 100000))
+            line.append(random.randint(0, 100000000))
         data.append(line)
     return data
 
