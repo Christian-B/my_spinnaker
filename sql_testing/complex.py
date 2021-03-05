@@ -85,11 +85,11 @@ class SqlLiteDatabase(object):
             sql = f.read()
         self._db.executescript(sql)
 
-    def _get_local_metadata(self, source_name, variable_name, neuron_ids):
+    def _get_raw_table(self, source_name, variable_name, neuron_ids):
         with self._db:
             for row in self._db.execute(
                     """
-                    SELECT table_name
+                    SELECT raw_table
                     FROM local_metadata
                     WHERE source_name = ? AND variable_name = ? 
                         AND first_neuron_id = ?
@@ -97,21 +97,38 @@ class SqlLiteDatabase(object):
                     """, (source_name, variable_name, neuron_ids[0])):
                 return row["table_name"]
 
-        table_name = source_name + "_" + variable_name + "_" + str(neuron_ids[0])
-        neuron_ids_str = ",".join(["'" + str(id) + "'" for id in neuron_ids])
-        self._db.execute(
-            """
-            INSERT INTO local_metadata(
-                source_name, variable_name, table_name, first_neuron_id) 
-            VALUES(?,?,?,?)
-            """, (source_name, variable_name, table_name, neuron_ids[0]))
+        return self._create_matrix_table(source_name, variable_name, neuron_ids)
 
-        ddl_statement = "CREATE TABLE {} (timestamp, {})".format(
-            table_name, neuron_ids_str)
-        self._db.execute(ddl_statement)
-        return table_name
+    def table_name(self,  source_name, variable_name):
+        return source_name + "_" + variable_name
 
-    def _get_global_metadata(self, source_name, variable_name):
+    def _create_matrix_table(self,  source_name, variable_name, neuron_ids):
+        with self._db:
+            ordered_view = self.table_name(source_name, variable_name) + "_" + str(neuron_ids[0])
+            raw_table = ordered_view + "_raw"
+
+            # Create the raw table
+            timestamp = "timestamp INTEGER PRIMARY KEY ASC"
+            neuron_ids_str = ",".join(["'" + str(id) + "' INTEGER" for id in neuron_ids])
+            ddl_statement = "CREATE TABLE {} ({}, {})".format(
+                raw_table, timestamp, neuron_ids_str)
+            self._db.execute(ddl_statement)
+
+            ddl_statement = "CREATE VIEW {} AS SELECT * FROM {} ORDER BY timestamp".format(
+                ordered_view, raw_table)
+            self._db.execute(ddl_statement)
+
+            # save the raw_table and ordered_view
+            self._db.execute(
+                """
+                INSERT INTO local_metadata(
+                    source_name, variable_name, raw_table, ordered_view, first_neuron_id, n_neurons) 
+                VALUES(?,?,?,?,?,?)
+                """, (source_name, variable_name, raw_table, ordered_view, neuron_ids[0], len(neuron_ids)))
+
+            return raw_table
+
+    def _get_global_table(self, source_name, variable_name):
         with self._db:
             for row in self._db.execute(
                     """
@@ -120,31 +137,116 @@ class SqlLiteDatabase(object):
                     LIMIT 1
                     """, (source_name, variable_name)):
                 return row["view_name"]
+        self._create_full_views(source_name, variable_name)
+        return self._create_global_metadata(source_name, variable_name)
 
-            table_names = []
+    def _create_full_views(self, source_name, variable_name):
+        with self._db:
+            ordered_views = []
+            first_neuron_ids = []
             for row in self._db.execute(
                     """
-                    SELECT table_name FROM local_metadata
+                    SELECT ordered_view, first_neuron_id
+                    FROM local_metadata
                     WHERE source_name = ? AND variable_name = ?
                     ORDER BY first_neuron_id
                     """, (source_name, variable_name)):
-                table_names.append(row["table_name"])
-
-            view_name = source_name + "_" + variable_name
-            ddl_statement = "CREATE VIEW {} AS SELECT * FROM {}".format(
-                view_name, " NATURAL JOIN ".join(table_names))
-            self._db.execute(ddl_statement)
+                ordered_views.append(row["ordered_view"])
+                first_neuron_ids.append(row["first_neuron_id"])
+        if len(ordered_views) == 0:
+            raise Exception("No data for source {} and variable {}".format(
+                source_name, variable_name))
+        full_views = self.create_full_views(source_name, variable_name, ordered_views)
+        for i in range(len(first_neuron_ids)):
+            print(source_name, variable_name, full_views[i], first_neuron_ids[i])
             self._db.execute(
                 """
-                INSERT INTO global_metadata(
-                    source_name, variable_name, view_name) 
-                VALUES(?,?,?)
+                UPDATE local_metadata 
+                SET full_view = ? 
+                WHERE source_name = ? and variable_name = ? and first_neuron_id = ?
                 """,
-                (source_name, variable_name, view_name))
+                (full_views[i], source_name, variable_name, first_neuron_ids[i]))
 
-            cursor = self._db.cursor()
-            cursor.execute("SELECT * FROM {}".format(view_name))
-            names = [description[0] for description in cursor.description]
+    def create_full_views(self, source_name, variable_name, ordered_views):
+        index_view = self.table_name(source_name, variable_name) + "_indexes"
+        ddl_statement = " CREATE VIEW {} AS SELECT timestamp FROM {}".format(
+            index_view, ordered_views[0])
+        for i in range(1, len(ordered_views)):
+            ddl_statement += " UNION SELECT timestamp from {}".format(
+                ordered_views[i])
+        self._db.execute(ddl_statement)
+
+        if len(ordered_views) == 1:
+            return ordered_views
+
+        full_views = []
+        with self._db:
+            for row in self._db.execute(
+                    "SELECT COUNT(*) as count FROM {}".format(index_view)):
+                full_count = row["count"]
+
+            for ordered_view in ordered_views:
+                for row in self._db.execute(
+                        "SELECT COUNT(*) as count FROM {}".format(ordered_view)):
+                    local_count = row["count"]
+
+                if local_count == full_count:
+                    full_views.append(ordered_view)
+                else:
+                    full_views.append(self._create_full_view(index_view, ordered_view))
+        return full_views
+
+    def _create_full_view(self, index_view, ordered_view):
+        with self._db:
+            full_view = ordered_view + "_full"
+            ddl_statement = """
+                CREATE VIEW {} 
+                AS SELECT * FROM {} LEFT JOIN {} USING (timestamp)
+                """
+            ddl_statement = ddl_statement.format(full_view, index_view, ordered_view)
+            self._db.execute(ddl_statement)
+        return full_view
+
+    def _create_global_metadata(self, source_name, variable_name):
+        with self._db:
+            full_views = []
+            total_n_neurons = 0
+            for row in self._db.execute(
+                    """
+                    SELECT full_view, n_neurons FROM local_metadata
+                    WHERE source_name = ? AND variable_name = ?
+                    ORDER BY first_neuron_id
+                    """, (source_name, variable_name)):
+                full_views.append(row["full_view"])
+                total_n_neurons += row["n_neurons"]
+
+            print("total_n_neurons: ", total_n_neurons)
+            if total_n_neurons < 1991:
+                return self._create_global_views(
+                    source_name, variable_name, full_views)
+        return None
+    # def _create_index_view(self):
+
+    def _create_global_views(self, source_name, variable_name, table_names):
+            view_name = self.table_name(source_name, variable_name)
+            ddl_statement = "CREATE VIEW {} AS SELECT * FROM {}".format(
+                view_name, " NATURAL JOIN ".join(table_names))
+            print(ddl_statement)
+            with self._db:
+                self._db.execute(ddl_statement)
+                self._db.execute(
+                    """
+                    INSERT INTO global_metadata(
+                        source_name, variable_name, view_name) 
+                    VALUES(?,?,?)
+                    """,
+                    (source_name, variable_name, view_name))
+            with self._db:
+                cursor = self._db.cursor()
+                query = "SELECT * FROM {}".format(view_name)
+                print(query)
+                cursor.execute(query)
+                names = [description[0] for description in cursor.description]
 
             fields = names[0]
             for name in names[1:]:
@@ -156,10 +258,11 @@ class SqlLiteDatabase(object):
             return view_name
 
     def insert_items(self, source_name, variable_name, neuron_ids, data):
-        table_name = self._get_local_metadata(
+        table_name = self._get_raw_table(
             source_name, variable_name, neuron_ids)
         with self._db:
             cursor = self._db.cursor()
+            # Get the column names
             cursor.execute("SELECT * FROM {}".format(table_name))
             query = "INSERT INTO {} VALUES ({})".format(
                 table_name, ",".join("?" for _ in cursor.description))
@@ -202,13 +305,17 @@ class SqlLiteDatabase(object):
         variables = self.get_variable_map()
         for source_name, variables in variables.iteritems():
             for variable_name in variables:
-                self._get_global_metadata(source_name, variable_name)
+                self._get_global_table(source_name, variable_name)
 
     def get_data(self, source_name, variable_name):
-        view_name = self._get_global_metadata(source_name, variable_name)
+        view_name = self._get_global_table(source_name, variable_name)
+        if view_name:
+            return self._get_data(view_name)
+
+    def _get_data(self, table_name):
         with self._db:
             cursor = self._db.cursor()
-            cursor.execute("SELECT * FROM {}".format(view_name))
+            cursor.execute("SELECT * FROM {}".format(table_name))
             names = [description[0] for description in cursor.description]
             data = [list(row[:]) for row in cursor.fetchall()]
             return names, data

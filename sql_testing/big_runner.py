@@ -30,35 +30,21 @@ def insert(source_name, variable_name, timesteps, neuron_ids):
     data = random_data(timesteps, neuron_ids)
     db.insert_items(source_name, variable_name, neuron_ids, data)
 
+
 db = SqlLiteDatabase("complex.sqlite3")
 db.clear_ds()
 
 source_name = "population1"
 variable_name = "voltage"
-neuron_ids = range(10)
-timesteps =range(1, 100, 2)
-insert(source_name, variable_name, timesteps, neuron_ids)
-
-neuron_ids = range(10, 30, 2)
-timesteps =range(0, 100, 2)
-insert(source_name, variable_name, timesteps, neuron_ids)
-
-source_name = "population1"
-variable_name = "gsyn"
-neuron_ids = range(10)
 timesteps =range(100)
-insert(source_name, variable_name, timesteps, neuron_ids)
+width = 5
 
-source_name = "pop2"
-variable_name = "voltage"
-neuron_ids = range(20)
-timesteps =range(100)
-insert(source_name, variable_name, timesteps, neuron_ids)
+for c in range(2):
+    neuron_ids = range(c*width, (c+1)* width)
+    insert(source_name, variable_name, timesteps, neuron_ids)
 
 #print(db.get_sources())
 print(db.get_variable_map())
 
 print(db.get_data("population1","voltage"))
-print(db.get_data("pop2","voltage"))
-print(db.get_data("population1","gsyn"))
 db.close()
