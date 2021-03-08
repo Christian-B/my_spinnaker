@@ -30,7 +30,7 @@ def random_data(timesteps, neuron_ids):
 
 def insert(source_name, variable_name, timesteps, neuron_ids):
     data = random_data(timesteps, neuron_ids)
-    db.insert_items(source_name, variable_name, neuron_ids, data)
+    db.insert_matrix(source_name, variable_name, neuron_ids, data)
 
 
 db = SqlLiteDatabase("complex.sqlite3")
@@ -48,7 +48,7 @@ for c in range(100):
 #print(db.get_sources())
 print(db.get_variable_map())
 
-neurons_ids, timestamps, data = db.get_data("population1","voltage")
+neurons_ids, timestamps, data = db.get_matrix_data("population1", "voltage")
 print(neurons_ids.shape)
 print(timestamps.shape)
 print(data.shape)

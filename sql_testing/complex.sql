@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS local_metadata(
 CREATE TABLE IF NOT EXISTS global_metadata(
 	source_name STRING NOT NULL,
 	variable_name STRING NOT NULL,
+	table_type STRING NOT NULL,
 	index_table STRING NOT NULL,
 	view_name STRING NULL,
 	n_neurons INTEGER NOT NULL);

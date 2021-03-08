@@ -41,6 +41,7 @@ class SqlLiteDatabase(object):
     ]
 
     META_TABLES = ["global_metadata", "local_metadata"]
+    _MATRIX = "matrix"
 
     def __init__(self, database_file=None):
         """
@@ -107,26 +108,35 @@ class SqlLiteDatabase(object):
             for name in self.META_TABLES:
                 self._db.execute("DELETE FROM " + name)
 
-    def insert_items(self, source_name, variable_name, neuron_ids, data):
+    def insert_matrix(self, source_name, variable_name, neuron_ids, data):
+        """
+        Inserts matrix data into the database
+
+        :param source_name:
+        :param variable_name:
+        :param neuron_ids:
+        :param data:
+        :return:
+        """
         with self._db:
-            raw_table = self._get_raw_table(
+            raw_table = self._get_matrix_raw_table(
                 source_name, variable_name, neuron_ids)
             cursor = self._db.cursor()
-            # Get the column names
-            cursor.execute("SELECT * FROM {}".format(raw_table))
+            # Get the number of columns
+            cursor.execute("SELECT * FROM {} LIMIT 1".format(raw_table))
             query = "INSERT INTO {} VALUES ({})".format(
                 raw_table, ",".join("?" for _ in cursor.description))
             print(query)
             cursor.executemany(query, data)
 
-            index_table = self._get_index_table(source_name, variable_name)
+            index_table = self._get_matix_index_table(source_name, variable_name)
             query = "INSERT OR IGNORE INTO {} VALUES(?)".format(index_table)
             print(query)
             indexes = [[row[0]] for row in data]
             print(indexes)
             self._db.executemany(query, indexes)
 
-    def _get_raw_table(self, source_name, variable_name, neuron_ids):
+    def _get_matrix_raw_table(self, source_name, variable_name, neuron_ids):
         for row in self._db.execute(
                 """
                 SELECT raw_table
@@ -135,9 +145,19 @@ class SqlLiteDatabase(object):
                     AND first_neuron_id = ?
                 LIMIT 1
                 """, (source_name, variable_name, neuron_ids[0])):
-            return row["table_name"]
+            table_name = row["raw_table"]
+            check_ids = self._get_matrix_ids(table_name)
+            assert(check_ids == list(neuron_ids))
+            return (table_name)
 
         return self._create_matrix_table(source_name, variable_name, neuron_ids)
+
+    def _get_matrix_ids(self, table_name):
+        cursor = self._db.cursor()
+        # Get the column names
+        cursor.execute("SELECT * FROM {} LIMIT 1".format(table_name))
+        ids = [int(description[0]) for description in cursor.description[1:]]
+        return ids
 
     def _create_matrix_table(self,  source_name, variable_name, neuron_ids):
         full_view = self._table_name(source_name, variable_name) + "_" + str(neuron_ids[0])
@@ -150,7 +170,7 @@ class SqlLiteDatabase(object):
             raw_table, timestamp, neuron_ids_str)
         self._db.execute(ddl_statement)
 
-        index_table = self._get_index_table(source_name, variable_name)
+        index_table = self._get_matix_index_table(source_name, variable_name)
 
         # create full view
         ddl_statement = """
@@ -177,7 +197,7 @@ class SqlLiteDatabase(object):
     def _table_name(self, source_name, variable_name):
         return source_name + "_" + variable_name
 
-    def _get_index_table(self, source_name, variable_name):
+    def _get_matix_index_table(self, source_name, variable_name):
         for row in self._db.execute(
                 """
                 SELECT index_table FROM global_metadata
@@ -197,9 +217,9 @@ class SqlLiteDatabase(object):
         self._db.execute(
             """
             INSERT INTO global_metadata(
-                source_name, variable_name, index_table, n_neurons) 
-            VALUES(?,?,?, ?)
-            """, (source_name, variable_name, index_table, 0))
+                source_name, variable_name, table_type, index_table, n_neurons) 
+            VALUES(?,?,?,?,?)
+            """, (source_name, variable_name, self._MATRIX , index_table, 0))
 
         return index_table
 
@@ -256,38 +276,44 @@ class SqlLiteDatabase(object):
             local_views.append(row["full_view"])
         return local_views
 
-    def _get_global_table(self, source_name, variable_name):
+    def _get_global_matrix_table(self, source_name, variable_name):
          for row in self._db.execute(
                 """
-                SELECT view_name FROM global_metadata
+                SELECT view_name, table_type FROM global_metadata
                 WHERE source_name = ? AND variable_name = ?
                 LIMIT 1
                 """, (source_name, variable_name)):
+            if row["table_type"] != self._MATRIX:
+                raise Exception("{}: {} has data type {}".format(
+                    source_name, variable_name,  row["table_type"]))
             return row["view_name"]
+         raise Exception("No Data for {}: {}".format(
+             source_name, variable_name))
 
     def get_variable_map(self):
         variables = defaultdict(list)
         with self._db:
             for row in self._db.execute(
                     """
-                    SELECT source_name, variable_name 
-                    FROM local_metadata 
+                    SELECT source_name, variable_name, table_type
+                    FROM global_metadata 
                     GROUP BY source_name, variable_name
                     """):
-                variables[row["source_name"]].append(row["variable_name"])
+                variables[row["source_name"]].append("{}:{}".format(
+                    row["variable_name"],row["table_type"]))
         return variables
 
-    def get_data(self, source_name, variable_name):
-        #with self._db:
-        #    view_name = self._get_global_table(source_name, variable_name)
-        #    if view_name:
-        #        return self._get_data(view_name)
+    def get_matrix_data(self, source_name, variable_name):
+        with self._db:
+            view_name = self._get_global_matrix_table(source_name, variable_name)
+            if view_name:
+                return self._get_matrix_data(view_name)
 
         local_views = self._get_local_views(source_name, variable_name)
         all_neurons_ids = []
         all_local_data = []
         for local_view in local_views:
-            local_neurons_ids, timestamps, local_data = self._get_data(
+            local_neurons_ids, timestamps, local_data = self._get_matrix_data(
                 local_view)
             all_neurons_ids.append(local_neurons_ids)
             all_local_data.append(local_data)
@@ -295,11 +321,11 @@ class SqlLiteDatabase(object):
         data = numpy.hstack(all_local_data)
         return neurons_ids, timestamps, data
 
-    def _get_data(self, table_name):
+    def _get_matrix_data(self, table_name):
         cursor = self._db.cursor()
         cursor.execute("SELECT * FROM {}".format(table_name))
         names = [description[0] for description in cursor.description]
-        neurons_ids = [int(i) for i in names[1:]]
+        neurons_ids = numpy.array(names[1:], dtype=numpy.integer)
         timestamps = []
         data = []
         values = numpy.array(cursor.fetchall())
