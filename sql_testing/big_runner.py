@@ -16,6 +16,7 @@
 import random
 from complex import SqlLiteDatabase
 
+
 def random_data(timesteps, neuron_ids):
     data = []
     for timestep in timesteps:
@@ -25,6 +26,7 @@ def random_data(timesteps, neuron_ids):
             line.append(random.randint(0, 100000000))
         data.append(line)
     return data
+
 
 def insert(source_name, variable_name, timesteps, neuron_ids):
     data = random_data(timesteps, neuron_ids)
@@ -37,14 +39,18 @@ db.clear_ds()
 source_name = "population1"
 variable_name = "voltage"
 timesteps =range(100)
-width = 5
+width = 200
 
-for c in range(2):
+for c in range(100):
     neuron_ids = range(c*width, (c+1)* width)
     insert(source_name, variable_name, timesteps, neuron_ids)
 
 #print(db.get_sources())
 print(db.get_variable_map())
 
-print(db.get_data("population1","voltage"))
+neurons_ids, timestamps, data = db.get_data("population1","voltage")
+print(neurons_ids.shape)
+print(timestamps.shape)
+print(data.shape)
+
 db.close()
