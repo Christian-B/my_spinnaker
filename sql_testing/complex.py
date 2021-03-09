@@ -14,16 +14,20 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from collections import defaultdict
+from enum import Enum
 import numpy
 import os
 import sqlite3
 
 
+class TABLE_TYPES(Enum):
+    EVENT = 0
+    SINGLE = 1
+    MATRIX = 2
+
+
 _DDL_FILE = os.path.join(os.path.dirname(__file__), "complex.sql")
 _VIEW_CUTOFFF = 1990  # test as 1999 but with safety
-_MATRIX = "matrix"
-_SINGLE = "single"
-_EVENT = "event"
 
 
 class SqlLiteDatabase(object):
@@ -91,7 +95,7 @@ class SqlLiteDatabase(object):
         self._db.executescript(sql)
 
     def clear_ds(self):
-        """ Clear all saved data specification data
+        """ Clear all saved data
         """
         with self._db:
             names = [row["name"]
@@ -109,23 +113,42 @@ class SqlLiteDatabase(object):
             for name in self.META_TABLES:
                 self._db.execute("DELETE FROM " + name)
 
-    def _table_name(self, source_name, variable_name):
-        return source_name + "_" + variable_name
+    def _table_name(self, source, variable):
+        """
+        Get a table name based on source and variable names
+
+        :param str source: Name of the source for example the population
+        :param str variable: Name of the variable
+        :rtype: str
+        """
+        return source + "_" + variable
 
     def get_variable_map(self):
+        """
+        Gets a map of sources to a list of variables:table_type
+
+        :rtype: dict(list(str))
+        """
         with self._db:
             variables = defaultdict(list)
             for row in self._db.execute(
                     """
-                    SELECT source_name, variable_name, data_type
+                    SELECT source, variable, table_type
                     FROM metadata 
-                    GROUP BY source_name, variable_name, data_type
+                    GROUP BY source, variable, table_type
                     """):
-                variables[row["source_name"]].append("{}:{}".format(
-                    row["variable_name"], row["data_type"]))
+                variables[row["source"]].append("{}:{}".format(
+                    row["variable"], row["table_type"]))
             return variables
 
     def _check_table_exist(self, table_name):
+        """
+        Support function to see if a table already exists
+
+        :param str table_name: name of a Table
+        :return: True if and l=only if the table exists
+        :type: bool
+        """
         for _ in self._db.execute(
                 """
                 SELECT name FROM sqlite_master WHERE type='table' AND name=?
@@ -134,43 +157,96 @@ class SqlLiteDatabase(object):
             return True
         return False
 
+    def insert_data(self, source, variable, ids, data):
+        """
+        Inserts data into the database
+
+        This call supports multiple types of ids/data using the ids param to
+        identify the type
+
+        If ids is None acts like a call to insert_events
+
+        If ids is a single int acts like a call to insert_single
+
+        If ids is a list of ints acts like a call to insert_matrix
+
+        :param str source: Name of the source for example the population
+        :param str variable: Name of the variable
+        :param data: A 2d matrix with the first column being the timestamp.
+        :param ids: The ids for the data being added or None for events(spikes)
+        :type ids: list(int), int, None
+        :return:
+        """
+        if isinstance(ids, int):
+            self.insert_single(source, variable, ids, data)
+        elif ids is None:
+            self.insert_events(source, variable, data)
+        else:
+            self.insert_matrix(source, variable, ids, data)
+
     def _get_data_table(
-            self, source_name, variable_name, data_type, create_table):
+            self, source, variable, table_type, create_table):
+        """
+        Finds or if allowed creates a data table based on source and variable
+
+        :param str source: Name of the source for example the population
+        :param str variable: Name of the variable
+        :param table_type: Type of table to find or create
+        :type table_type: TABLE_TYPES or None
+        :param bool create_table:
+        :return:
+            The name and type of the Table.
+            Name could be None if the data is too complex to get from a
+            single table.
+        type: (str, TABLE_TYPES) or (None, TABLE_TYPES)
+        :raises:
+            An Exception if an existing Table does not have the exected type
+            An Expcetion if the table does not exists an create_table is False
+        """
         for row in self._db.execute(
                 """
-                SELECT data_table, data_type
+                SELECT data_table, table_type
                 FROM metadata
-                WHERE source_name = ? AND variable_name = ?
+                WHERE source = ? AND variable = ?
                 LIMIT 1
-                """, (source_name, variable_name)):
-            if data_type:
-                assert(data_type == row["data_type"])
-            return row["data_table"]
+                """, (source, variable)):
+            if table_type:
+                assert(table_type.value == row["table_type"])
+            return row["data_table"], row["table_type"]
 
         if not create_table:
             raise Exception("No Data for {}:{}".format(
-                source_name, variable_name))
+                source, variable))
 
-        if data_type == _MATRIX:
+        if table_type == TABLE_TYPES.MATRIX:
             data_table = None  # data_table done later if at all
-        elif data_type == _SINGLE:
-            data_table = self._create_single_table(source_name, variable_name)
-        elif data_type == _EVENT:
-            data_table = self._create_event_table(source_name, variable_name)
+        elif table_type == TABLE_TYPES.SINGLE:
+            data_table = self._create_single_table(source, variable)
+        elif table_type == TABLE_TYPES.EVENT:
+            data_table = self._create_event_table(source, variable)
         else:
             raise NotImplementedError(
-                "No create table for datatype {}".format(data_type))
+                "No create table for datatype {}".format(table_type))
 
         self._db.execute(
             """
             INSERT OR IGNORE INTO metadata(
-                source_name, variable_name, data_table, data_type, n_neurons) 
+                source, variable, data_table, table_type, n_ids) 
             VALUES(?,?,?,?,0)
-            """, (source_name, variable_name, data_table, data_type))
+            """, (source, variable, data_table, table_type.value))
 
-        return data_table
+        return data_table, table_type
 
     def _get_table_ids(self, table_name):
+        """
+        Gets the ids for this table
+
+        The assumption is that names of all but the first column are ids
+        in a form that can be cast to int
+
+        :param str table_name: Name of the table to check
+        :rype: list(int)
+        """
         cursor = self._db.cursor()
         # Get the column names
         cursor.execute("SELECT * FROM {} LIMIT 1".format(table_name))
@@ -178,28 +254,92 @@ class SqlLiteDatabase(object):
         return ids
 
     def _get_column_data(self, table_name):
+        """
+        Gets the data from single column based database.
+
+        The assumption is that names of all but the first column are ids
+        in a form that can be cast to int
+
+        :param str table_name: Name of the table to get data for
+        :return: Three numpy arrays
+            - The ids of the data
+            - The timestamps of the data
+            - The data with shape len(timestamp), len(ids)
+        :rtype: (numpy.ndarray, numpy.ndarray, numpy.ndarray)
+        """
         cursor = self._db.cursor()
         cursor.execute("SELECT * FROM {}".format(table_name))
         names = [description[0] for description in cursor.description]
-        neurons_ids = numpy.array(names[1:], dtype=numpy.integer)
+        ids = numpy.array(names[1:], dtype=numpy.integer)
         values = numpy.array(cursor.fetchall())
-        return neurons_ids, values[:, 0], values[:, 1:]
+        return ids, values[:, 0], values[:, 1:]
+
+    def get_data(self, source, variable):
+        """
+        Gets the data for this source and variable name
+
+        :param str source: Name of the source for example the population
+        :param str variable: Name of the variable
+        :return: One or Three numpy arrays
+            - The ids of the data (Not for event/spike data)
+            - The timestamps of the data  (Not for event/spike data)
+            - The data with shape len(timestamp), len(ids)
+            or shape (2, X) timestamp, id
+        :rtype: (numpy.ndarray, numpy.ndarray, numpy.ndarray) or numpy.ndarray
+        """
+        with self._db:
+            data_table, table_type = self._get_data_table(
+                source, variable, None, False)
+            if table_type == TABLE_TYPES.MATRIX:
+                return self._get_matrix_data(
+                    source, variable, table_type)
+            if table_type == TABLE_TYPES.SINGLE:
+                return self._get_column_data(data_table)
+            if table_type == TABLE_TYPES.EVENT:
+                return self._get_events_data(data_table)
+
+    def _clean_data(self, data):
+        """
+        If requires does any pre cleaning of the data
+
+        For example numpy arrays are converted to lists
+
+        :param data: the input data
+        :return: The data as lists that can be used in queries
+        """
+        if isinstance(data, numpy.ndarray):
+            return data.tolist()
+        return data
 
     # matrix data
 
-    def insert_matrix(self, source_name, variable_name, neuron_ids, data):
+    def insert_matrix(self, source, variable, ids, data):
         """
         Inserts matrix data into the database
 
-        :param source_name:
-        :param variable_name:
-        :param neuron_ids:
-        :param data:
-        :return:
+        This method can be called multiple times with the same source and
+        variable, and multiple distinct ids lists. The assumption is that no
+        id will be in more than one of these distinct lists,
+        and that the lists will be in the same order each time.
+
+        The data will be a 2D array where the first column is the timestamp
+        and the one column for each id.
+
+        There can ever only be a single value per timestamp, id pair.
+
+        The get methods deal with missing data so there is not requirement
+        that every timestamp has data for all ids lists.
+
+        :param str source: Name of the source for example the population
+        :param str variable: Name of the variable
+        :param list(int) ids: The ids for the data.
+        :param data: 2d array of shape (X, len(ids)+1)
+        :type data: iterable(iterable(int) or numpty.ndarray
         """
+        data = self._clean_data(data)
         with self._db:
             raw_table = self._get_matrix_raw_table(
-                source_name, variable_name, neuron_ids)
+                source, variable, ids)
 
             cursor = self._db.cursor()
             # Get the number of columns
@@ -210,39 +350,53 @@ class SqlLiteDatabase(object):
             cursor.executemany(query, data)
 
             index_table = self._get_matix_index_table(
-                source_name, variable_name)
+                source, variable)
             query = "INSERT OR IGNORE INTO {} VALUES(?)".format(index_table)
             indexes = [[row[0]] for row in data]
             self._db.executemany(query, indexes)
 
-    def _get_matrix_raw_table(self, source_name, variable_name, neuron_ids):
+    def _get_matrix_raw_table(self, source, variable, ids):
+        """
+
+        :param str source: Name of the source for example the population
+        :param str variable: Name of the variable
+        :param ids:
+        :return:
+        """
         for row in self._db.execute(
                 """
                 SELECT raw_table
                 FROM local_matrix_metadata
-                WHERE source_name = ? AND variable_name = ? 
-                    AND first_neuron_id = ?
+                WHERE source = ? AND variable = ? 
+                    AND first_id = ?
                 LIMIT 1
-                """, (source_name, variable_name, neuron_ids[0])):
+                """, (source, variable, ids[0])):
             table_name = row["raw_table"]
             check_ids = self._get_table_ids(table_name)
-            assert(check_ids == list(neuron_ids))
+            assert(check_ids == list(ids))
             return (table_name)
 
-        return self._create_matrix_table(source_name, variable_name, neuron_ids)
+        return self._create_matrix_table(source, variable, ids)
 
-    def _create_matrix_table(self,  source_name, variable_name, neuron_ids):
-        full_view = self._table_name(source_name, variable_name) + "_" + str(neuron_ids[0])
+    def _create_matrix_table(self,  source, variable, ids):
+        """
+
+        :param str source: Name of the source for example the population
+        :param str variable: Name of the variable
+        :param ids:
+        :return:
+        """
+        full_view = self._table_name(source, variable) + "_" + str(ids[0])
         raw_table = full_view + "_raw"
 
         # Create the raw table
         timestamp = "timestamp INTEGER PRIMARY KEY ASC"
-        neuron_ids_str = ",".join(["'" + str(id) + "' INTEGER" for id in neuron_ids])
+        ids_str = ",".join(["'" + str(id) + "' INTEGER" for id in ids])
         ddl_statement = "CREATE TABLE IF NOT EXISTS {} ({}, {})".format(
-            raw_table, timestamp, neuron_ids_str)
+            raw_table, timestamp, ids_str)
         self._db.execute(ddl_statement)
 
-        index_table = self._get_matix_index_table(source_name, variable_name)
+        index_table = self._get_matix_index_table(source, variable)
 
         # create full view
         ddl_statement = """
@@ -255,25 +409,27 @@ class SqlLiteDatabase(object):
         self._db.execute(
             """
             INSERT OR IGNORE INTO local_matrix_metadata(
-                source_name, variable_name, raw_table, full_view, 
-                first_neuron_id) 
+                source, variable, raw_table, full_view, 
+                first_id) 
             VALUES(?,?,?,?,?)
             """,
-            (source_name, variable_name, raw_table, full_view, neuron_ids[0]))
+            (source, variable, raw_table, full_view, ids[0]))
 
-        self._get_data_table(source_name, variable_name, _MATRIX, True)
+        self._get_data_table(source, variable, TABLE_TYPES.MATRIX, True)
 
         self._update_global_matrix_view(
-            source_name, variable_name, full_view, len(neuron_ids))
+            source, variable, full_view, len(ids))
 
         return raw_table
 
-    def _get_matix_index_table(self, source_name, variable_name):
-        index_table = self._table_name(source_name, variable_name) + "_indexes"
-        if self._check_table_exist(index_table):
-            return index_table
+    def _get_matix_index_table(self, source, variable):
+        """
 
-        # Create the index table
+        :param str source: Name of the source for example the population
+        :param str variable: Name of the variable
+        :return:
+        """
+        index_table = self._table_name(source, variable) + "_indexes"
         ddl_statement = """
             CREATE TABLE IF NOT EXISTS {} 
             (timestamp INTEGER PRIMARY KEY ASC)
@@ -283,32 +439,40 @@ class SqlLiteDatabase(object):
         return index_table
 
     def _update_global_matrix_view(
-            self, source_name, variable_name, local_view, n_neurons):
+            self, source, variable, local_view, n_ids):
+        """
+
+        :param str source: Name of the source for example the population
+        :param str variable: Name of the variable
+        :param local_view:
+        :param n_ids:
+        :return:
+        """
         self._db.execute(
             """
             UPDATE metadata 
-            SET n_neurons = n_neurons + ?
-            WHERE source_name = ? and variable_name = ?
+            SET n_ids = n_ids + ?
+            WHERE source = ? and variable = ?
             """,
-            (n_neurons, source_name, variable_name))
+            (n_ids, source, variable))
 
         for row in self._db.execute(
             """
-            SELECT n_neurons FROM metadata
-            WHERE source_name = ? AND variable_name = ?
+            SELECT n_ids FROM metadata
+            WHERE source = ? AND variable = ?
             LIMIT 1
-            """, (source_name, variable_name)):
-            new_n_neurons = row["n_neurons"]
+            """, (source, variable)):
+            new_n_ids = row["n_ids"]
 
-        if new_n_neurons == n_neurons:
+        if new_n_ids == n_ids:
             global_view = local_view
         else:
-            global_view = self._table_name(source_name, variable_name) + "_all"
+            global_view = self._table_name(source, variable) + "_all"
             ddl_statement = "DROP VIEW IF EXISTS {}".format(global_view)
             self._db.execute(ddl_statement)
-            if new_n_neurons < _VIEW_CUTOFFF:
+            if new_n_ids < _VIEW_CUTOFFF:
                 self._create_global_view(
-                    source_name, variable_name, global_view)
+                    source, variable, global_view)
             else:
                 global_view = None
 
@@ -316,82 +480,149 @@ class SqlLiteDatabase(object):
             """
             UPDATE metadata 
             SET data_table = ?
-            WHERE source_name = ? and variable_name = ?
+            WHERE source = ? and variable = ?
             """,
-            (global_view, source_name, variable_name))
+            (global_view, source, variable))
 
-    def _create_global_view(self, source_name, variable_name, global_view):
-        local_views = self._get_local_views(source_name, variable_name)
+    def _create_global_view(self, source, variable, global_view):
+        """
+
+        :param str source: Name of the source for example the population
+        :param str variable: Name of the variable
+        :param global_view:
+        :return:
+        """
+        local_views = self._get_local_views(source, variable)
         ddl_statement = "CREATE VIEW {} AS SELECT * FROM {}".format(
                 global_view, " NATURAL JOIN ".join(local_views))
         print(ddl_statement)
         self._db.execute(ddl_statement)
 
-    def _get_local_views(self, source_name, variable_name):
+    def _get_local_views(self, source, variable):
+        """
+
+        :param str source: Name of the source for example the population
+        :param str variable: Name of the variable
+        :return:
+        """
         local_views = []
         for row in self._db.execute(
                 """
                 SELECT full_view
                 FROM local_matrix_metadata
-                WHERE source_name = ? AND variable_name = ?
-                ORDER BY first_neuron_id
-                """, (source_name, variable_name)):
+                WHERE source = ? AND variable = ?
+                ORDER BY first_id
+                """, (source, variable)):
             local_views.append(row["full_view"])
         return local_views
 
-    def get_matrix_data(self, source_name, variable_name):
-        with self._db:
-            view_name = self._get_data_table(
-                source_name, variable_name, _MATRIX, False)
-            if view_name:
-                return self._get_column_data(view_name)
+    def get_matrix_data(self, source, variable):
+        """
 
-        local_views = self._get_local_views(source_name, variable_name)
-        all_neurons_ids = []
+        :param str source: Name of the source for example the population
+        :param str variable: Name of the variable
+        :return:
+        """
+        with self._db:
+            data_table, _ = self._get_data_table(
+                source, variable, TABLE_TYPES.MATRIX, False)
+            return self._get_matrix_data(
+                source, variable, data_table)
+
+    def _get_matrix_data(self, source, variable, data_table):
+        """
+
+        :param str source: Name of the source for example the population
+        :param str variable: Name of the variable
+        :param data_table:
+        :return:
+        """
+        if data_table:
+            return self._get_column_data(data_table)
+
+        local_views = self._get_local_views(source, variable)
+        all_ids = []
         all_local_data = []
         for local_view in local_views:
-            local_neurons_ids, timestamps, local_data = self._get_column_data(
+            local_ids, timestamps, local_data = self._get_column_data(
                 local_view)
-            all_neurons_ids.append(local_neurons_ids)
+            all_ids.append(local_ids)
             all_local_data.append(local_data)
-        neurons_ids = numpy.hstack(all_neurons_ids)
+        ids = numpy.hstack(all_ids)
         data = numpy.hstack(all_local_data)
-        return neurons_ids, timestamps, data
+        return ids, timestamps, data
 
     # Events data
 
-    def insert_events(self, source_name, variable_name, data):
+    def insert_events(self, source, variable, data):
+        """
+
+        :param str source: Name of the source for example the population
+        :param str variable: Name of the variable
+        :param data:
+        :return:
+        """
+        data = self._clean_data(data)
         with self._db:
-            data_table = self._get_data_table(
-                source_name, variable_name, _EVENT, True)
+            data_table, _ = self._get_data_table(
+                source, variable, TABLE_TYPES.EVENT, True)
             query = "INSERT INTO {} VALUES (?, ?)".format(data_table)
             print(query)
             self._db.executemany(query, data)
 
-    def _create_event_table(self, source_name, variable_name):
-        data_table = self._table_name(source_name, variable_name)
+    def _create_event_table(self, source, variable):
+        """
+
+        :param str source: Name of the source for example the population
+        :param str variable: Name of the variable
+        :return:
+        """
+        data_table = self._table_name(source, variable)
         ddl_statement = """
             CREATE TABLE IF NOT EXISTS {} (
             timestamp INTEGER NOT NULL, 
-            neuron_id INTEGER NOT NULL)
+            id INTEGER NOT NULL)
             """.format(data_table)
         self._db.execute(ddl_statement)
         return data_table
 
-    def get_spike_data(self, source_name, variable_name):
+    def get_events_data(self, source, variable):
+        """
+
+        :param str source: Name of the source for example the population
+        :param str variable: Name of the variable
+        :return:
+        """
         with self._db:
-            data_table = self._get_data_table(
-                source_name, variable_name, _EVENT, False)
-            cursor = self._db.cursor()
-            cursor.execute("SELECT * FROM {}".format(data_table))
-            return numpy.array(cursor.fetchall())
+            data_table, _ = self._get_data_table(
+                source, variable, TABLE_TYPES.EVENT, False)
+            return self._get_events_data(data_table)
+
+    def _get_events_data(self, data_table):
+        """
+
+        :param data_table:
+        :return:
+        """
+        cursor = self._db.cursor()
+        cursor.execute("SELECT * FROM {}".format(data_table))
+        return numpy.array(cursor.fetchall())
 
     # counts data
 
-    def insert_single(self, source_name, variable_name, id, data):
+    def insert_single(self, source, variable, id, data):
+        """
+
+        :param str source: Name of the source for example the population
+        :param str variable: Name of the variable
+        :param id:
+        :param data:
+        :return:
+        """
+        data = self._clean_data(data)
         with self._db:
-            data_table = self._get_data_table(
-                source_name, variable_name, _SINGLE, True)
+            data_table, _ = self._get_data_table(
+                source, variable, TABLE_TYPES.SINGLE, True)
 
             # Make sure a column exists for this id
             # Different cores will have different ids safetly needed
@@ -415,8 +646,14 @@ class SqlLiteDatabase(object):
             values = [[row[1], row[0]] for row in data]
             self._db.executemany(query, values)
 
-    def _create_single_table(self, source_name, variable_name):
-        data_table = self._table_name(source_name, variable_name)
+    def _create_single_table(self, source, variable):
+        """
+
+        :param str source: Name of the source for example the population
+        :param str variable: Name of the variable
+        :return:
+        """
+        data_table = self._table_name(source, variable)
         ddl_statement = """
             CREATE TABLE  IF NOT EXISTS {} (
             timestamp INTEGER PRIMARY KEY ASC)
@@ -424,8 +661,14 @@ class SqlLiteDatabase(object):
         self._db.execute(ddl_statement)
         return data_table
 
-    def get_single_data(self, source_name, variable_name):
+    def get_single_data(self, source, variable):
+        """
+
+        :param str source: Name of the source for example the population
+        :param str variable: Name of the variable
+        :return:
+        """
         with self._db:
-            data_table = self._get_data_table(
-                source_name, variable_name, _SINGLE, False)
+            data_table, _ = self._get_data_table(
+                source, variable, TABLE_TYPES.SINGLE, False)
             return self._get_column_data(data_table)

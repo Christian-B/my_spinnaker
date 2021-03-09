@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import numpy
 import random
 from complex import SqlLiteDatabase
 
@@ -58,6 +59,14 @@ def insert_counts(source_name, timesteps, neuron_ids):
 db = SqlLiteDatabase("complex.sqlite3")
 db.clear_ds()
 
+source_name = "pop2"
+neuron_ids = range(20)
+timesteps =range(100)
+data = numpy.array(random_matrix_data(timesteps, neuron_ids))
+db.insert_data(source_name, "voltage", neuron_ids, data)
+data = numpy.array(random_matrix_data(timesteps, [0]))
+db.insert_data(source_name, "spike_counts", 0, data)
+
 source_name = "population1"
 variable_name = "voltage"
 neuron_ids = range(10)
@@ -86,13 +95,6 @@ neuron_ids = range(10)
 timesteps =range(100)
 insert_matrix(source_name, variable_name, timesteps, neuron_ids)
 
-source_name = "pop2"
-variable_name = "voltage"
-neuron_ids = range(20)
-timesteps =range(100)
-insert_matrix(source_name, variable_name, timesteps, neuron_ids)
-
-#print(db.get_sources())
 print(db.get_variable_map())
 
 print("population1", "voltage")
@@ -108,7 +110,7 @@ neurons_ids, timestamps, data = db.get_matrix_data("population1", "gsyn")
 print(neurons_ids.shape, timestamps.shape, data.shape)
 
 print("population1", "spikes")
-spikes = db.get_spike_data("population1", "spikes")
+spikes = db.get_events_data("population1", "spikes")
 print(spikes.shape)
 
 print("population1", "spike_count")

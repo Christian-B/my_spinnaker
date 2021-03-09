@@ -19,17 +19,17 @@ PRAGMA main.synchronous = OFF;
 -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 -- A table assigning ids to source names
 CREATE TABLE IF NOT EXISTS local_matrix_metadata(
-	source_name STRING NOT NULL,
-	variable_name STRING NOT NULL,
+	source STRING NOT NULL,
+	variable STRING NOT NULL,
 	raw_table STRING NOT NULL,
 	full_view STRING,
-	first_neuron_id INTEGER NOT NULL);
+	first_id INTEGER NOT NULL);
 
 CREATE TABLE IF NOT EXISTS metadata(
-	source_name STRING NOT NULL,
-	variable_name STRING NOT NULL,
+	source STRING NOT NULL,
+	variable STRING NOT NULL,
 	data_table STRING NULL,
-	data_type String NOT NULL,
-	n_neurons INTEGER NOT NULL);
+	table_type INTEGER NOT NULL,
+	n_ids INTEGER NOT NULL);
 
 
