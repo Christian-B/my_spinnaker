@@ -40,8 +40,7 @@ class SqlLiteDatabase(object):
         "_db",
     ]
 
-    META_TABLES = ["global_metadata", "local_metadata"]
-    _MATRIX = "matrix"
+    META_TABLES = ["global_matrix_metadata", "local_matrix_metadata", "spikes_metadata", "counts_metadata"]
 
     def __init__(self, database_file=None):
         """
@@ -99,7 +98,6 @@ class SqlLiteDatabase(object):
                 names.remove(name)
             for name in names:
                 self._db.execute("DROP TABLE " + name)
-            self._db.execute("DELETE FROM local_metadata")
             names = [row["name"]
                             for row in self._db.execute(
                     "SELECT name FROM sqlite_master WHERE type='view'")]
@@ -107,6 +105,24 @@ class SqlLiteDatabase(object):
                 self._db.execute("DROP VIEW " + name)
             for name in self.META_TABLES:
                 self._db.execute("DELETE FROM " + name)
+
+    def _table_name(self, source_name, variable_name):
+        return source_name + "_" + variable_name
+
+    def get_variable_map(self):
+        with self._db:
+            variables = defaultdict(list)
+            for row in self._db.execute(
+                    """
+                    SELECT source_name, variable_name
+                    FROM global_matrix_metadata 
+                    GROUP BY source_name, variable_name
+                    """):
+                variables[row["source_name"]].append("{}:matrix".format(
+                    row["variable_name"]))
+        return variables
+
+    # matrix data
 
     def insert_matrix(self, source_name, variable_name, neuron_ids, data):
         """
@@ -121,6 +137,7 @@ class SqlLiteDatabase(object):
         with self._db:
             raw_table = self._get_matrix_raw_table(
                 source_name, variable_name, neuron_ids)
+
             cursor = self._db.cursor()
             # Get the number of columns
             cursor.execute("SELECT * FROM {} LIMIT 1".format(raw_table))
@@ -131,28 +148,27 @@ class SqlLiteDatabase(object):
 
             index_table = self._get_matix_index_table(source_name, variable_name)
             query = "INSERT OR IGNORE INTO {} VALUES(?)".format(index_table)
-            print(query)
             indexes = [[row[0]] for row in data]
-            print(indexes)
             self._db.executemany(query, indexes)
+
 
     def _get_matrix_raw_table(self, source_name, variable_name, neuron_ids):
         for row in self._db.execute(
                 """
                 SELECT raw_table
-                FROM local_metadata
+                FROM local_matrix_metadata
                 WHERE source_name = ? AND variable_name = ? 
                     AND first_neuron_id = ?
                 LIMIT 1
                 """, (source_name, variable_name, neuron_ids[0])):
             table_name = row["raw_table"]
-            check_ids = self._get_matrix_ids(table_name)
+            check_ids = self._get_table_ids(table_name)
             assert(check_ids == list(neuron_ids))
             return (table_name)
 
         return self._create_matrix_table(source_name, variable_name, neuron_ids)
 
-    def _get_matrix_ids(self, table_name):
+    def _get_table_ids(self, table_name):
         cursor = self._db.cursor()
         # Get the column names
         cursor.execute("SELECT * FROM {} LIMIT 1".format(table_name))
@@ -182,25 +198,22 @@ class SqlLiteDatabase(object):
 
         self._db.execute(
             """
-            INSERT INTO local_metadata(
+            INSERT INTO local_matrix_metadata(
                 source_name, variable_name, raw_table, full_view, 
                 first_neuron_id) 
             VALUES(?,?,?,?,?)
             """,
             (source_name, variable_name, raw_table, full_view, neuron_ids[0]))
 
-        self._update_global_view(
+        self._update_global_matrix_view(
             source_name, variable_name, full_view, len(neuron_ids))
 
         return raw_table
 
-    def _table_name(self, source_name, variable_name):
-        return source_name + "_" + variable_name
-
     def _get_matix_index_table(self, source_name, variable_name):
         for row in self._db.execute(
                 """
-                SELECT index_table FROM global_metadata
+                SELECT index_table FROM global_matrix_metadata
                 WHERE source_name = ? AND variable_name = ?
                 LIMIT 1
                 """, (source_name, variable_name)):
@@ -216,18 +229,18 @@ class SqlLiteDatabase(object):
         #
         self._db.execute(
             """
-            INSERT INTO global_metadata(
-                source_name, variable_name, table_type, index_table, n_neurons) 
-            VALUES(?,?,?,?,?)
-            """, (source_name, variable_name, self._MATRIX , index_table, 0))
+            INSERT INTO global_matrix_metadata(
+                source_name, variable_name, index_table, n_neurons) 
+            VALUES(?,?,?,0)
+            """, (source_name, variable_name, index_table))
 
         return index_table
 
-    def _update_global_view(
+    def _update_global_matrix_view(
             self, source_name, variable_name, local_view, n_neurons):
         for row in self._db.execute(
             """
-            SELECT view_name, n_neurons FROM global_metadata
+            SELECT view_name, n_neurons FROM global_matrix_metadata
             WHERE source_name = ? AND variable_name = ?
             LIMIT 1
             """, (source_name, variable_name)):
@@ -251,7 +264,7 @@ class SqlLiteDatabase(object):
 
         self._db.execute(
             """
-            UPDATE global_metadata 
+            UPDATE global_matrix_metadata 
             SET view_name = ?, n_neurons = ?
             WHERE source_name = ? and variable_name = ?
             """,
@@ -269,7 +282,7 @@ class SqlLiteDatabase(object):
         for row in self._db.execute(
                 """
                 SELECT full_view
-                FROM local_metadata
+                FROM local_matrix_metadata
                 WHERE source_name = ? AND variable_name = ?
                 ORDER BY first_neuron_id
                 """, (source_name, variable_name)):
@@ -279,29 +292,13 @@ class SqlLiteDatabase(object):
     def _get_global_matrix_table(self, source_name, variable_name):
          for row in self._db.execute(
                 """
-                SELECT view_name, table_type FROM global_metadata
+                SELECT view_name FROM global_matrix_metadata
                 WHERE source_name = ? AND variable_name = ?
                 LIMIT 1
                 """, (source_name, variable_name)):
-            if row["table_type"] != self._MATRIX:
-                raise Exception("{}: {} has data type {}".format(
-                    source_name, variable_name,  row["table_type"]))
             return row["view_name"]
-         raise Exception("No Data for {}: {}".format(
+         raise Exception("No Matrix Data for {}: {}".format(
              source_name, variable_name))
-
-    def get_variable_map(self):
-        variables = defaultdict(list)
-        with self._db:
-            for row in self._db.execute(
-                    """
-                    SELECT source_name, variable_name, table_type
-                    FROM global_metadata 
-                    GROUP BY source_name, variable_name
-                    """):
-                variables[row["source_name"]].append("{}:{}".format(
-                    row["variable_name"],row["table_type"]))
-        return variables
 
     def get_matrix_data(self, source_name, variable_name):
         with self._db:
@@ -333,3 +330,105 @@ class SqlLiteDatabase(object):
         #    timestamps.append(row[0])
         #    data.append(row[1:])
         return neurons_ids, values[:, 0], values[:, 1:]
+
+    # spikes data
+
+    def insert_spikes(self, source_name, variable_name, data):
+        with self._db:
+            data_table = self._get_spikes_table(
+                source_name, variable_name, True)
+            query = "INSERT INTO {} VALUES (?, ?)".format(data_table)
+            print(query)
+            self._db.executemany(query, data)
+
+    def _get_spikes_table(
+            self, source_name, variable_name, create):
+        for row in self._db.execute(
+                """
+                SELECT data_table
+                FROM spikes_metadata
+                WHERE source_name = ? AND variable_name = ?
+                LIMIT 1
+                """, (source_name, variable_name)):
+            return row["data_table"]
+
+        if not create:
+            raise Exception("No Spikes Data for {}: {}".format(
+                source_name, variable_name))
+
+        data_table = self._table_name(source_name, variable_name)
+        ddl_statement = """
+            CREATE TABLE {} (
+            timestamp INTEGER NOT NULL, 
+            neuron_id INTEGER NOT NULL)
+            """.format(data_table)
+        self._db.execute(ddl_statement)
+
+        self._db.execute(
+            """
+            INSERT INTO spikes_metadata(
+                source_name, variable_name, data_table) 
+            VALUES(?,?,?)
+            """, (source_name, variable_name, data_table))
+
+        return data_table
+
+    def get_spike_data(self, source_name, variable_name):
+        with self._db:
+            data_table = self._get_spikes_table(source_name, variable_name, False)
+            cursor = self._db.cursor()
+            cursor.execute("SELECT * FROM {}".format(data_table))
+            return numpy.array(cursor.fetchall())
+
+    # counts data
+
+    def insert_counts(self, source_name, variable_name, id, data):
+        with self._db:
+            data_table = self._get_counts_table(
+                source_name, variable_name, True)
+
+            ids_in_table = self._get_table_ids(data_table)
+            if id not in ids_in_table:
+                ddl = "ALTER TABLE {} ADD '{}' INTEGER".format(data_table, id)
+                print(ddl)
+                self._db.execute(ddl)
+
+            query = "INSERT or IGNORE INTO {}(timestamp) VALUES (?)".format(data_table)
+            print(query)
+            timestamps = [[row[0]] for row in data]
+            values = [[row[1], row[0]] for row in data]
+           self._db.executemany(query, timestamps)
+            query = "UPDATE {} SET '{}' = ? where timestamp = ?".format(data_table, id)
+            print(query)
+            self._db.executemany(query, values)
+
+    def _get_counts_table(
+            self, source_name, variable_name, create):
+        for row in self._db.execute(
+                """
+                SELECT data_table
+                FROM counts_metadata
+                WHERE source_name = ? AND variable_name = ?
+                LIMIT 1
+                """, (source_name, variable_name)):
+            return row["data_table"]
+
+        if not create:
+            raise Exception("No Counts Data for {}: {}".format(
+                source_name, variable_name))
+
+        data_table = self._table_name(source_name, variable_name)
+        ddl_statement = """
+            CREATE TABLE {} (
+            timestamp INTEGER PRIMARY KEY ASC)
+            """.format(data_table)
+        self._db.execute(ddl_statement)
+
+        self._db.execute(
+            """
+            INSERT INTO counts_metadata(
+                source_name, variable_name, data_table) 
+            VALUES(?,?,?)
+            """, (source_name, variable_name, data_table))
+
+        return data_table

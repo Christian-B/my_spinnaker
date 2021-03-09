@@ -16,7 +16,8 @@
 import random
 from complex import SqlLiteDatabase
 
-def random_data(timesteps, neuron_ids):
+
+def random_matrix_data(timesteps, neuron_ids):
     data = []
     for timestep in timesteps:
         line = []
@@ -26,9 +27,33 @@ def random_data(timesteps, neuron_ids):
         data.append(line)
     return data
 
-def insert(source_name, variable_name, timesteps, neuron_ids):
-    data = random_data(timesteps, neuron_ids)
+
+def random_spike_data(timesteps, neuron_ids):
+    data = []
+    for timestep in timesteps:
+        for id in neuron_ids:
+            if random.randint(0, 25) == 1:
+                data.append((timestep, id))
+            if random.randint(0, 25) == 2:
+                data.append((timestep, id))
+                data.append((timestep, id))
+    return data
+
+
+def insert_matrix(source_name, variable_name, timesteps, neuron_ids):
+    data = random_matrix_data(timesteps, neuron_ids)
     db.insert_matrix(source_name, variable_name, neuron_ids, data)
+
+
+def insert_spikes(source_name, timesteps, neuron_ids):
+    data = random_spike_data(timesteps, neuron_ids)
+    db.insert_spikes(source_name, "spikes", data)
+
+
+def insert_counts(source_name, timesteps, neuron_ids):
+    data = random_matrix_data(timesteps, [neuron_ids[0]])
+    db.insert_counts(source_name, "spike_count", neuron_ids[0], data)
+
 
 db = SqlLiteDatabase("complex.sqlite3")
 db.clear_ds()
@@ -37,27 +62,35 @@ source_name = "population1"
 variable_name = "voltage"
 neuron_ids = range(10)
 timesteps =range(1, 100, 2)
-insert(source_name, variable_name, timesteps, neuron_ids)
+insert_matrix(source_name, variable_name, timesteps, neuron_ids)
+insert_spikes(source_name, timesteps, neuron_ids)
+insert_counts(source_name, timesteps, neuron_ids)
 timesteps =range(100, 200)
-insert(source_name, variable_name, timesteps, neuron_ids)
+insert_matrix(source_name, variable_name, timesteps, neuron_ids)
+insert_spikes(source_name, timesteps, neuron_ids)
+insert_counts(source_name, timesteps, neuron_ids)
 
 neuron_ids = range(10, 30, 2)
 timesteps =range(0, 100, 2)
-insert(source_name, variable_name, timesteps, neuron_ids)
+insert_matrix(source_name, variable_name, timesteps, neuron_ids)
+insert_spikes(source_name, timesteps, neuron_ids)
+insert_counts(source_name, timesteps, neuron_ids)
 timesteps =range(100, 200)
-insert(source_name, variable_name, timesteps, neuron_ids)
+insert_matrix(source_name, variable_name, timesteps, neuron_ids)
+insert_spikes(source_name, timesteps, neuron_ids)
+insert_counts(source_name, timesteps, neuron_ids)
 
 source_name = "population1"
 variable_name = "gsyn"
 neuron_ids = range(10)
 timesteps =range(100)
-insert(source_name, variable_name, timesteps, neuron_ids)
+insert_matrix(source_name, variable_name, timesteps, neuron_ids)
 
 source_name = "pop2"
 variable_name = "voltage"
 neuron_ids = range(20)
 timesteps =range(100)
-insert(source_name, variable_name, timesteps, neuron_ids)
+insert_matrix(source_name, variable_name, timesteps, neuron_ids)
 
 #print(db.get_sources())
 print(db.get_variable_map())
@@ -73,4 +106,10 @@ print(neurons_ids.shape, timestamps.shape, data.shape)
 print("population1", "gsyn")
 neurons_ids, timestamps, data = db.get_matrix_data("population1", "gsyn")
 print(neurons_ids.shape, timestamps.shape, data.shape)
+
+print("population1", "spikes")
+spikes = db.get_spike_data("population1", "spikes")
+print(spikes.shape)
+
 db.close()
+
