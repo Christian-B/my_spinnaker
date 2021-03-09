@@ -25,20 +25,11 @@ CREATE TABLE IF NOT EXISTS local_matrix_metadata(
 	full_view STRING,
 	first_neuron_id INTEGER NOT NULL);
 
-CREATE TABLE IF NOT EXISTS global_matrix_metadata(
+CREATE TABLE IF NOT EXISTS metadata(
 	source_name STRING NOT NULL,
 	variable_name STRING NOT NULL,
-	index_table STRING NOT NULL,
-	view_name STRING NULL,
-	n_neurons INTEGER NOT NULL);
+	data_table STRING NULL,
+	data_type String NOT NULL,
+	n_neurons INTEGER);
 
-CREATE TABLE IF NOT EXISTS spikes_metadata(
-	source_name STRING NOT NULL,
-	variable_name STRING NOT NULL,
-	data_table STRING NOT NULL);
-
-CREATE TABLE IF NOT EXISTS counts_metadata(
-	source_name STRING NOT NULL,
-	variable_name STRING NOT NULL,
-	data_table STRING NOT NULL);
 

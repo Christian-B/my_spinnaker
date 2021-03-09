@@ -40,7 +40,7 @@ class SqlLiteDatabase(object):
         "_db",
     ]
 
-    META_TABLES = ["global_matrix_metadata", "local_matrix_metadata", "spikes_metadata", "counts_metadata"]
+    META_TABLES = ["metadata", "local_matrix_metadata"]
 
     def __init__(self, database_file=None):
         """
@@ -114,13 +114,22 @@ class SqlLiteDatabase(object):
             variables = defaultdict(list)
             for row in self._db.execute(
                     """
-                    SELECT source_name, variable_name
-                    FROM global_matrix_metadata 
-                    GROUP BY source_name, variable_name
+                    SELECT source_name, variable_name, data_type
+                    FROM metadata 
+                    GROUP BY source_name, variable_name, data_type
                     """):
-                variables[row["source_name"]].append("{}:matrix".format(
-                    row["variable_name"]))
-        return variables
+                variables[row["source_name"]].append("{}:{}".format(
+                    row["variable_name"], row["data_type"]))
+            return variables
+
+    def _check_table_exist(self, table_name):
+        for _ in self._db.execute(
+                """
+                SELECT name FROM sqlite_master WHERE type='table' AND name=?
+                LIMIT 1
+                """, [table_name]):
+            return True
+        return False
 
     # matrix data
 
@@ -205,34 +214,27 @@ class SqlLiteDatabase(object):
             """,
             (source_name, variable_name, raw_table, full_view, neuron_ids[0]))
 
+        self._db.execute(
+            """
+            INSERT INTO metadata(
+                source_name, variable_name, data_type, n_neurons) 
+            VALUES(?,?,"matrix",0)
+            """, (source_name, variable_name))
+
         self._update_global_matrix_view(
             source_name, variable_name, full_view, len(neuron_ids))
 
         return raw_table
 
     def _get_matix_index_table(self, source_name, variable_name):
-        for row in self._db.execute(
-                """
-                SELECT index_table FROM global_matrix_metadata
-                WHERE source_name = ? AND variable_name = ?
-                LIMIT 1
-                """, (source_name, variable_name)):
-            return row["index_table"]
+        index_table = self._table_name(source_name, variable_name) + "_indexes"
+        if self._check_table_exist(index_table):
+            return index_table
 
         # Create the index table
-        index_table = self._table_name(source_name, variable_name) + "_indexes"
         ddl_statement = "CREATE TABLE {} (timestamp INTEGER PRIMARY KEY ASC)"
         ddl_statement = ddl_statement.format(index_table)
         self._db.execute(ddl_statement)
-
-        # Register the index table
-        #
-        self._db.execute(
-            """
-            INSERT INTO global_matrix_metadata(
-                source_name, variable_name, index_table, n_neurons) 
-            VALUES(?,?,?,0)
-            """, (source_name, variable_name, index_table))
 
         return index_table
 
@@ -240,11 +242,11 @@ class SqlLiteDatabase(object):
             self, source_name, variable_name, local_view, n_neurons):
         for row in self._db.execute(
             """
-            SELECT view_name, n_neurons FROM global_matrix_metadata
+            SELECT data_table, n_neurons FROM metadata
             WHERE source_name = ? AND variable_name = ?
             LIMIT 1
             """, (source_name, variable_name)):
-            view_name = row["view_name"]
+            view_name = row["data_table"]
             old_n_neurons = row["n_neurons"]
 
         new_n_neurons = old_n_neurons + n_neurons
@@ -264,8 +266,8 @@ class SqlLiteDatabase(object):
 
         self._db.execute(
             """
-            UPDATE global_matrix_metadata 
-            SET view_name = ?, n_neurons = ?
+            UPDATE metadata 
+            SET data_table = ?, n_neurons = ?
             WHERE source_name = ? and variable_name = ?
             """,
             (global_view, new_n_neurons, source_name, variable_name))
@@ -292,11 +294,11 @@ class SqlLiteDatabase(object):
     def _get_global_matrix_table(self, source_name, variable_name):
          for row in self._db.execute(
                 """
-                SELECT view_name FROM global_matrix_metadata
+                SELECT data_table FROM metadata
                 WHERE source_name = ? AND variable_name = ?
                 LIMIT 1
                 """, (source_name, variable_name)):
-            return row["view_name"]
+            return row["data_table"]
          raise Exception("No Matrix Data for {}: {}".format(
              source_name, variable_name))
 
@@ -346,7 +348,7 @@ class SqlLiteDatabase(object):
         for row in self._db.execute(
                 """
                 SELECT data_table
-                FROM spikes_metadata
+                FROM metadata
                 WHERE source_name = ? AND variable_name = ?
                 LIMIT 1
                 """, (source_name, variable_name)):
@@ -366,9 +368,9 @@ class SqlLiteDatabase(object):
 
         self._db.execute(
             """
-            INSERT INTO spikes_metadata(
-                source_name, variable_name, data_table) 
-            VALUES(?,?,?)
+            INSERT INTO metadata(
+                source_name, variable_name, data_table, data_type) 
+            VALUES(?,?,?,"event")
             """, (source_name, variable_name, data_table))
 
         return data_table
@@ -397,7 +399,7 @@ class SqlLiteDatabase(object):
             print(query)
             timestamps = [[row[0]] for row in data]
             values = [[row[1], row[0]] for row in data]
-           self._db.executemany(query, timestamps)
+            self._db.executemany(query, timestamps)
             query = "UPDATE {} SET '{}' = ? where timestamp = ?".format(data_table, id)
             print(query)
             self._db.executemany(query, values)
@@ -407,7 +409,7 @@ class SqlLiteDatabase(object):
         for row in self._db.execute(
                 """
                 SELECT data_table
-                FROM counts_metadata
+                FROM metadata
                 WHERE source_name = ? AND variable_name = ?
                 LIMIT 1
                 """, (source_name, variable_name)):
@@ -426,9 +428,9 @@ class SqlLiteDatabase(object):
 
         self._db.execute(
             """
-            INSERT INTO counts_metadata(
-                source_name, variable_name, data_table) 
-            VALUES(?,?,?)
+            INSERT INTO metadata(
+                source_name, variable_name, data_table, data_type) 
+            VALUES(?,?,?,"single")
             """, (source_name, variable_name, data_table))
 
         return data_table
