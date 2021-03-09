@@ -47,12 +47,12 @@ def insert_matrix(source_name, variable_name, timesteps, neuron_ids):
 
 def insert_spikes(source_name, timesteps, neuron_ids):
     data = random_spike_data(timesteps, neuron_ids)
-    db.insert_spikes(source_name, "spikes", data)
+    db.insert_events(source_name, "spikes", data)
 
 
 def insert_counts(source_name, timesteps, neuron_ids):
     data = random_matrix_data(timesteps, [neuron_ids[0]])
-    db.insert_counts(source_name, "spike_count", neuron_ids[0], data)
+    db.insert_single(source_name, "spike_count", neuron_ids[0], data)
 
 
 db = SqlLiteDatabase("complex.sqlite3")
@@ -110,6 +110,10 @@ print(neurons_ids.shape, timestamps.shape, data.shape)
 print("population1", "spikes")
 spikes = db.get_spike_data("population1", "spikes")
 print(spikes.shape)
+
+print("population1", "spike_count")
+neurons_ids, timestamps, data = db.get_single_data("population1", "spike_count")
+print(neurons_ids.shape, timestamps.shape, data.shape)
 
 db.close()
 

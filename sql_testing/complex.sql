@@ -30,6 +30,6 @@ CREATE TABLE IF NOT EXISTS metadata(
 	variable_name STRING NOT NULL,
 	data_table STRING NULL,
 	data_type String NOT NULL,
-	n_neurons INTEGER);
+	n_neurons INTEGER NOT NULL);
 
 
