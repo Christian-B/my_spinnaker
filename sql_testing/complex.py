@@ -168,13 +168,13 @@ class SqlLiteDatabase(object):
 
         If ids is a single int acts like a call to insert_single
 
-        If ids is a list of ints acts like a call to insert_matrix
+        If ids is an iterable of ints acts like a call to insert_matrix
 
         :param str source: Name of the source for example the population
         :param str variable: Name of the variable
         :param data: A 2d matrix with the first column being the timestamp.
         :param ids: The ids for the data being added or None for events(spikes)
-        :type ids: list(int), int, None
+        :type ids: iterable(int), int, None
         :return:
         """
         if isinstance(ids, int):
@@ -332,7 +332,7 @@ class SqlLiteDatabase(object):
 
         :param str source: Name of the source for example the population
         :param str variable: Name of the variable
-        :param list(int) ids: The ids for the data.
+        :param iterable(int) ids: The ids for the data.
         :param data: 2d array of shape (X, len(ids)+1)
         :type data: iterable(iterable(int) or numpty.ndarray
         """
@@ -357,11 +357,13 @@ class SqlLiteDatabase(object):
 
     def _get_matrix_raw_table(self, source, variable, ids):
         """
+        Get or create a raw table to store local/core matrix data in
 
         :param str source: Name of the source for example the population
         :param str variable: Name of the variable
-        :param ids:
-        :return:
+        :param interable(ids) ids: Ids for this ocal/core
+        :return: name of raw data table
+        :rtype: str
         """
         for row in self._db.execute(
                 """
@@ -380,11 +382,16 @@ class SqlLiteDatabase(object):
 
     def _create_matrix_table(self,  source, variable, ids):
         """
+        Creates the raw table to store local/core matrix data in
+
+        Also creates a view to include any missing timestamps
+        and registers both with the local_matrix_metadata database
 
         :param str source: Name of the source for example the population
         :param str variable: Name of the variable
-        :param ids:
-        :return:
+        :param interable(ids) ids: Ids for this ocal/core
+        :return: name of raw data table
+        :rtype: str
         """
         full_view = self._table_name(source, variable) + "_" + str(ids[0])
         raw_table = full_view + "_raw"
@@ -418,16 +425,18 @@ class SqlLiteDatabase(object):
         self._get_data_table(source, variable, TABLE_TYPES.MATRIX, True)
 
         self._update_global_matrix_view(
-            source, variable, full_view, len(ids))
+            source, variable, raw_table, len(ids))
 
         return raw_table
 
     def _get_matix_index_table(self, source, variable):
         """
+        Get and if needed creates an index table for the timestamps.
 
         :param str source: Name of the source for example the population
         :param str variable: Name of the variable
-        :return:
+        :return: name of the index table
+        :rtype: str
         """
         index_table = self._table_name(source, variable) + "_indexes"
         ddl_statement = """
@@ -439,14 +448,23 @@ class SqlLiteDatabase(object):
         return index_table
 
     def _update_global_matrix_view(
-            self, source, variable, local_view, n_ids):
+            self, source, variable, raw_table, n_ids):
         """
+        Updates the metddata data_table and n_neurons  for this data
+
+        If there is only one local table for this data the data_table is
+        the raw_table
+
+        If there is more than one local table and it is possible a view is
+        created combining all the local full views.
+
+        If there are too many ids/columns to handle in a view data_table
+        is set to None to indicating that the local data must be contatenated.
 
         :param str source: Name of the source for example the population
         :param str variable: Name of the variable
-        :param local_view:
-        :param n_ids:
-        :return:
+        :param str raw_table: Name of the raw table just created
+        :param n_ids: Number of ids of the local tables just added
         """
         self._db.execute(
             """
@@ -465,14 +483,17 @@ class SqlLiteDatabase(object):
             new_n_ids = row["n_ids"]
 
         if new_n_ids == n_ids:
-            global_view = local_view
+            global_view = raw_table
         else:
             global_view = self._table_name(source, variable) + "_all"
             ddl_statement = "DROP VIEW IF EXISTS {}".format(global_view)
             self._db.execute(ddl_statement)
             if new_n_ids < _VIEW_CUTOFFF:
-                self._create_global_view(
-                    source, variable, global_view)
+                local_views = self._get_local_views(source, variable)
+                ddl_statement = "CREATE VIEW {} AS SELECT * FROM {}".format(
+                    global_view, " NATURAL JOIN ".join(local_views))
+                print(ddl_statement)
+                self._db.execute(ddl_statement)
             else:
                 global_view = None
 
@@ -484,26 +505,13 @@ class SqlLiteDatabase(object):
             """,
             (global_view, source, variable))
 
-    def _create_global_view(self, source, variable, global_view):
-        """
-
-        :param str source: Name of the source for example the population
-        :param str variable: Name of the variable
-        :param global_view:
-        :return:
-        """
-        local_views = self._get_local_views(source, variable)
-        ddl_statement = "CREATE VIEW {} AS SELECT * FROM {}".format(
-                global_view, " NATURAL JOIN ".join(local_views))
-        print(ddl_statement)
-        self._db.execute(ddl_statement)
-
     def _get_local_views(self, source, variable):
         """
+        Gets a list of all the local views for this source and variable
 
         :param str source: Name of the source for example the population
         :param str variable: Name of the variable
-        :return:
+        :rtype: list(str)
         """
         local_views = []
         for row in self._db.execute(
@@ -518,10 +526,20 @@ class SqlLiteDatabase(object):
 
     def get_matrix_data(self, source, variable):
         """
+        Retreives the matrix data for this source and variable.
+
+        If a single view is avaiable that is used,
+        otherwise the local data is concatenated.
 
         :param str source: Name of the source for example the population
         :param str variable: Name of the variable
-        :return:
+        :raises: An expception if there is not data for this source and
+            variable, or if it is nt matrix data
+        :return: Three numpy arrays
+            - The ids of the data
+            - The timestamps of the data
+            - The data with shape len(timestamp), len(ids)
+        :rtype: (numpy.ndarray, numpy.ndarray, numpy.ndarray)
         """
         with self._db:
             data_table, _ = self._get_data_table(
@@ -531,11 +549,18 @@ class SqlLiteDatabase(object):
 
     def _get_matrix_data(self, source, variable, data_table):
         """
+        Retreives the matrix data for this source and variable.
 
         :param str source: Name of the source for example the population
         :param str variable: Name of the variable
-        :param data_table:
-        :return:
+        :param data_table: Name of the single view to use or None if the
+            local data must be concatenated
+        :type data_table: str or None
+        :return: Three numpy arrays
+            - The ids of the data
+            - The timestamps of the data
+            - The data with shape len(timestamp), len(ids)
+        :rtype: (numpy.ndarray, numpy.ndarray, numpy.ndarray)
         """
         if data_table:
             return self._get_column_data(data_table)
@@ -556,11 +581,14 @@ class SqlLiteDatabase(object):
 
     def insert_events(self, source, variable, data):
         """
+        Inserts events/ spikes data
+
+        There can be more than one evet/spike for a timestamp, id pair
 
         :param str source: Name of the source for example the population
         :param str variable: Name of the variable
-        :param data:
-        :return:
+        :param data: Data to store in the format timestamp, id
+        :type data: iterable((int, int) or numpy.ndarray
         """
         data = self._clean_data(data)
         with self._db:
@@ -572,10 +600,12 @@ class SqlLiteDatabase(object):
 
     def _create_event_table(self, source, variable):
         """
+        Creates a table to hold events data
 
         :param str source: Name of the source for example the population
         :param str variable: Name of the variable
-        :return:
+        :return: Name of the events table
+        :rtype: str
         """
         data_table = self._table_name(source, variable)
         ddl_statement = """
@@ -588,10 +618,13 @@ class SqlLiteDatabase(object):
 
     def get_events_data(self, source, variable):
         """
+        Gets the events/spikes data for this source and variable
 
         :param str source: Name of the source for example the population
         :param str variable: Name of the variable
-        :return:
+        :return: The eevents data in the shape (x, 2) where the columns are
+            timestamp, id
+        :rtype: numpy.ndarray
         """
         with self._db:
             data_table, _ = self._get_data_table(
@@ -600,24 +633,32 @@ class SqlLiteDatabase(object):
 
     def _get_events_data(self, data_table):
         """
+        Gets the events/spikes data from this table
 
-        :param data_table:
-        :return:
+        :param str data_table: name of table to get data from
+        :return: The eevents data in the shape (x, 2) where the columns are
+            timestamp, id
+        :rtype: numpy.ndarray
         """
         cursor = self._db.cursor()
         cursor.execute("SELECT * FROM {}".format(data_table))
         return numpy.array(cursor.fetchall())
 
-    # counts data
+    # single data
 
     def insert_single(self, source, variable, id, data):
         """
+        Inserts data where there is only a single column of local data for
+        each core
+
+        Will add columns to the table as need.
 
         :param str source: Name of the source for example the population
         :param str variable: Name of the variable
-        :param id:
-        :param data:
-        :return:
+        :param int id:
+        :param data: Data in the shape (x, 2) where the columns are
+        timestamp, value
+        :type data: iterable((int, int)) or numpy.ndarray
         """
         data = self._clean_data(data)
         with self._db:
@@ -625,7 +666,7 @@ class SqlLiteDatabase(object):
                 source, variable, TABLE_TYPES.SINGLE, True)
 
             # Make sure a column exists for this id
-            # Different cores will have different ids safetly needed
+            # Different cores will have different ids so no safetly needed
             ids_in_table = self._get_table_ids(data_table)
             if id not in ids_in_table:
                 ddl = "ALTER TABLE {} ADD '{}' INTEGER".format(data_table, id)
@@ -648,6 +689,10 @@ class SqlLiteDatabase(object):
 
     def _create_single_table(self, source, variable):
         """
+        Creates a table to hold the single column data as it arrives.
+
+        The table starts of with only a timestamp column with additional id
+        columns added on the fly as needed.
 
         :param str source: Name of the source for example the population
         :param str variable: Name of the variable
@@ -663,10 +708,16 @@ class SqlLiteDatabase(object):
 
     def get_single_data(self, source, variable):
         """
+        Gets all the data (entered as single columns) for this source and
+        variable
 
         :param str source: Name of the source for example the population
         :param str variable: Name of the variable
-        :return:
+        :return: Three numpy arrays
+            - The ids of the data
+            - The timestamps of the data
+            - The data with shape len(timestamp), len(ids)
+        :rtype: (numpy.ndarray, numpy.ndarray, numpy.ndarray)
         """
         with self._db:
             data_table, _ = self._get_data_table(
