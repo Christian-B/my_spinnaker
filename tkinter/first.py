@@ -91,7 +91,7 @@ class App3:
                                         fill="blue")
                 entry = tk.Entry(frame, width=2)
                 entry.grid(row=row * 2 + 1, column=column * 2 + 1)
-                entry.insert(tk.END, "{}".format(row + column))
+                entry.insert_matrix(tk.END, "{}".format(row + column))
                 row_list.append(entry)
         matrix.append(row_list)
         for column in range(self.max_col):

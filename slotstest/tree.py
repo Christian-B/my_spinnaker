@@ -23,6 +23,11 @@ class Five(object):
     __slots__ = ("Foo", "Bar")
 
 
+class Four_Fice(Four, Five):
+
+    __slots__ = ()
+
+
 class Six(Five):
 
     __slots__ = ()
@@ -120,7 +125,7 @@ eighteen = Eighteen()
 eighteen1 = Eighteen()
 print(eighteen)
 print(eighteen.BULLY)
-eighteen1.BULLY = "xyz"
+#eighteen1.BULLY = "xyz"
 Eighteen.BULLY = "bar"
 print(eighteen.BULLY)
 print(eighteen1)
