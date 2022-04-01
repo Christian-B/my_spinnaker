@@ -1,4 +1,4 @@
-import spynnaker8 as p
+import pyNN.spiNNaker as p
 
 INJECTOR_LABEL = "injector"
 RECEIVER_LABEL = "receiver"

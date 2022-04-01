@@ -9,8 +9,7 @@ class SideClass(
         AbstractSupportsBitFieldRoutingCompression,
         allow_derivation=True):
 
-    def read_parameters_from_machine(
-            self, transceiver, placement, vertex_slice):
+    def read_parameters_from_machine(self, placement, vertex_slice):
         pass
 
 

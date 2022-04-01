@@ -1,4 +1,4 @@
-import spynnaker8 as p
+import pyNN.spiNNaker as p
 p.setup(1)
 simtime = 500
 pop_src = p.Population(1, p.SpikeSourcePoisson(

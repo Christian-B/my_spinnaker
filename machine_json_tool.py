@@ -1,6 +1,6 @@
 import json
 from spinn_machine.json_utils import (to_json, from_json_path)
-import spynnaker8 as sim
+import pyNN.spiNNaker as sim
 
 n_boards = 480
 n_chips_required = 0 - n_boards
