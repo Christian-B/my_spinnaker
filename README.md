@@ -1,4 +1,3 @@
-[![Test](https://img.shields.io/badge/test__badge-This%20is%20a%20test-orange)](https://example.com)
 
 This repository contains some work I did for the spinnaker project.
 
