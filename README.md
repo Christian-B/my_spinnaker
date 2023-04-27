@@ -1,4 +1,3 @@
-[![Test](https://img.shields.io/badge/test__badge-This%20is%20a%20test-orange)](https://example.com)
 
 This repository contains some work I did for the spinnaker project.
 
@@ -10,5 +9,5 @@ SpiNNakerManchester
 ===================
 [github](https://github.com/SpiNNakerManchester)
 
-[readthedocs](http://spinnakermanchester.readthedocs.io)
+[readthedocs](http://spinnakermanchester.readthedocs.io/en/7.0.0-a5)
 
