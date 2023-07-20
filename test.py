@@ -1,8 +1,5 @@
-from urllib.request import urlopen
-
-url = 'http://thebibleofetailing.com/'
-for i in range(10000):
-    try:
-        website = urlopen(url)
-    except Exception:
-       pass
+msg = 'The sdram per chip of %i was differemt to the expected value of {} for board Version {}'
+print(msg)
+args = (1)
+msg = msg % args
+print(msg)
