@@ -49,4 +49,4 @@ if __name__ == '__main__':
     # Jenkins appears to place scripts one level higher
     if not os.path.exists(os.path.join(spynnaker8_dir, "IntroLab")):
         spynnaker8_dir = os.path.dirname(spynnaker8_dir)
-    _find_pyfiles(spynnaker8_dir, "PyNN8Examples",[],[])
+    _find_pyfiles(spynnaker8_dir, "PyNNExamples",[],[])
