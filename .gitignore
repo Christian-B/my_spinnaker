@@ -9,6 +9,7 @@
 *build/
 *dist/
 *egg-info/
+test.py
 MANIFEST
 
 old_stuff/
