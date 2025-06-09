@@ -270,7 +270,7 @@ class SqlLiteDatabase(object):
         cursor = self._db.cursor()
         cursor.execute("SELECT * FROM {}".format(table_name))
         names = [description[0] for description in cursor.description]
-        ids = numpy.array(names[1:], dtype=numpy.integer)
+        ids = numpy.array(names[1:], dtype=numpy.uint32)
         values = numpy.array(cursor.fetchall())
         return ids, values[:, 0], values[:, 1:]
 
